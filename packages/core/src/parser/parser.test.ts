@@ -166,6 +166,133 @@ describe("jebakan", () => {
   });
 });
 
+describe("modifier hari (bug: 'senin besok' dulu lompat 2 minggu)", () => {
+  it("'senin besok' = Senin terdekat, BUKAN seminggu setelah Senin depan", () => {
+    const r = p("meeting senin besok");
+    // Jumat 7 Agu 2026 → Senin terdekat = 10 Agu, bukan 17 Agu
+    expect(day(r.dueAt)).toBe("2026-08-10");
+    expect(r.title).toBe("Meeting");
+  });
+
+  it("'senin nanti' juga cuma penekanan, tetap nearest", () => {
+    expect(day(p("kelas senin nanti").dueAt)).toBe("2026-08-10");
+  });
+
+  it("bare 'senin' (tanpa modifier) = sama dengan 'senin besok'", () => {
+    expect(day(p("meeting senin").dueAt)).toBe(day(p("meeting senin besok").dueAt));
+  });
+
+  it("'senin depan' SENGAJA beda — lompat ke minggu berikutnya", () => {
+    const r = p("meeting senin depan");
+    expect(day(r.dueAt)).toBe("2026-08-17");
+  });
+
+  it("'senin ini' = Senin minggu berjalan (delta dibiarkan apa adanya)", () => {
+    const r = p("meeting senin ini");
+    expect(day(r.dueAt)).toBe("2026-08-10");
+  });
+});
+
+describe("kamus diperbanyak", () => {
+  it("'ahad' (istilah agama) dikenali sebagai Minggu", () => {
+    const r = p("acara ahad jam 10");
+    expect(r.kind).toBe("busy");
+    expect(day(r.dueAt)).toBe("2026-08-09");
+    expect(at(r.dueAt)).toBe("2026-08-09 10:00");
+  });
+
+  it("'pekan depan' = sinonim 'minggu depan'", () => {
+    const r = p("pekan depan ada rapat");
+    expect(day(r.dueAt)).toBe("2026-08-10");
+    expect(r.kind).toBe("busy");
+    expect(r.title).toBe("Rapat");
+  });
+
+  it("'ahad depan' juga nyambung ke aturan 'minggu depan'", () => {
+    const r = p("ahad depan liburan");
+    expect(day(r.dueAt)).toBe("2026-08-10");
+    expect(r.title).toBe("Liburan");
+  });
+
+  it("'dini hari' sebagai daypart baru", () => {
+    const r = p("berangkat besok dini hari");
+    expect(at(r.dueAt)).toBe("2026-08-08 02:00");
+  });
+
+  it("bug lama: kunci priorityWords berspasi sekarang beneran kepakai", () => {
+    const utama = p("submit laporan prioritas utama");
+    expect(utama.priority).toBe(1);
+    expect(utama.title).toBe("Submit laporan");
+
+    const rendah = p("balesin chat no rush");
+    expect(rendah.priority).toBe(4);
+    expect(rendah.title).toBe("Balesin chat");
+
+    const gaPenting = p("beresin meja ga penting");
+    expect(gaPenting.priority).toBe(4);
+    expect(gaPenting.title).toBe("Beresin meja");
+  });
+
+  it("sinonim energi lewat sigil ~", () => {
+    expect(p("nulis draft ~sulit").energy).toBe("high");
+    expect(p("cuci piring ~mudah").energy).toBe("low");
+  });
+
+  it("typo bulan: 'febuari' dan ejaan lama 'nopember'", () => {
+    const feb = p("bayar listrik tgl 5 febuari");
+    expect(day(feb.dueAt)).toBe("2027-02-05"); // udah lewat tahun ini → lompat ke 2027
+
+    const nov = p("acara tgl 20 nopember");
+    expect(day(nov.dueAt)).toBe("2026-11-20");
+    expect(nov.kind).toBe("busy");
+  });
+});
+
+describe("kamus dari daftar user (typo, noise, sinonim)", () => {
+  it("typo 'bkin' + kombinasi 'bikin reminder' menang atas bucket neutral default", () => {
+    const r = p("bkin reminder rapat besok woy");
+    expect(r.wantsReminder).toBe(true);
+    expect(r.kind).toBe("task");
+    expect(r.title).toBe("Rapat");
+    expect(day(r.dueAt)).toBe("2026-08-08");
+  });
+
+  it("'set alarm' kepental ke bucket remind, bukan neutral (greedy-match 'set' sendirian)", () => {
+    const r = p("set alarm besok jam 6 pagi");
+    expect(r.wantsReminder).toBe(true);
+    expect(r.kind).toBe("task");
+    expect(at(r.dueAt)).toBe("2026-08-08 06:00");
+  });
+
+  it("typo 'mskin' + noise laughter/address-term ('bang','wkwk') dibuang bersih", () => {
+    const r = p("mskin agenda meeting jam 2 bang wkwk");
+    expect(r.kind).toBe("busy");
+    expect(r.title).toBe("Meeting");
+    expect(at(r.dueAt)).toBe("2026-08-07 14:00");
+  });
+
+  it("'mungkin' jadi sinyal perkiraan, sama kayak 'sekitar'", () => {
+    const r = p("mungkin jam 3 nonton bareng");
+    expect(r.approxTime).toBe(true);
+    expect(at(r.dueAt)).toBe("2026-08-07 15:00");
+    expect(r.kind).toBe("busy");
+  });
+
+  it("'tulisin' tetap KEPAKE di judul (beda dari 'catat' yang dibuang)", () => {
+    const r = p("tulisin ide project baru");
+    expect(r.title).toBe("Tulisin ide project baru");
+    expect(r.kind).toBe("task");
+    expect(r.dueAt).toBeUndefined();
+  });
+
+  it("'book' (sinonim Inggris) memicu kind busy sendirian", () => {
+    const r = p("book meeting sama klien besok");
+    expect(r.kind).toBe("busy");
+    expect(r.title).toBe("Meeting sama klien");
+    expect(day(r.dueAt)).toBe("2026-08-08");
+  });
+});
+
 describe("token bertanda", () => {
   it("tag, subtask, catatan, reminder", () => {
     const r = p("revisi vlog besok jam 2 #konten #urgent *30m +cek audio // pakai b-roll");

@@ -631,11 +631,17 @@ function applyDate(tokens: Token[], now: Date): Date | null {
       const modTok = tokens[i + offset + 1];
       let mode: "nearest" | "this" | "next" = "nearest";
       let len = offset + 1;
-      if (modTok?.norm === "depan" || modTok?.norm === "besok") {
+      if (modTok?.norm === "depan") {
+        // "senin depan" = lompat ke minggu berikutnya, sengaja beda dari nearest
         mode = "next";
         len += 1;
       } else if (modTok?.norm === "ini") {
         mode = "this";
+        len += 1;
+      } else if (modTok?.norm === "besok" || modTok?.norm === "nanti") {
+        // "senin besok" / "senin nanti" = penekanan doang, BUKAN "seminggu lagi".
+        // Tetap nearest — Senin yang paling deket ke depan. (bug: dulu disamain
+        // sama "depan" dan malah lompat 2 minggu)
         len += 1;
       }
       consume(tokens, i, len, "date");
@@ -860,16 +866,22 @@ function applyClock(result: ParseResult, base: Date, clock: Clock, approx: boole
 
 // ── prioritas dari kata ──────────────────────────────────────────────────────
 
+/**
+ * Mendukung frasa multi-kata ("prioritas utama", "nanti aja"), bukan cuma
+ * token tunggal — sebelumnya kunci berspasi di priorityWords gak pernah kena
+ * karena dicocokkan ke satu token utuh yang gak mungkin punya spasi.
+ */
 function applyPriorityWords(tokens: Token[], result: ParseResult): void {
   const table = lex.priorityWords as Record<string, number>;
+  const phrases = Object.keys(table);
+
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i]!;
     if (t.consumed || t.locked) continue;
-    const p = table[t.norm];
-    if (p !== undefined) {
-      result.priority ??= p as Priority;
-      consume(tokens, i, 1, "priority");
-    }
+    const hit = findPhrase(tokens, i, phrases);
+    if (!hit) continue;
+    result.priority ??= table[hit.phrase] as Priority;
+    consume(tokens, i, hit.len, "priority");
   }
 }
 

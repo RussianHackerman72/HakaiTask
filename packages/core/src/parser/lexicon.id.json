@@ -1,5 +1,5 @@
 {
-  "_readme": "KAMUS PARSER HAKAITASK — PLAN.md §6.1.2 s/d §6.1.5. Nambah kata = nambah satu baris di sini, bukan ngedit logika. Semua kunci HARUS huruf kecil.",
+  "_readme": "KAMUS PARSER HAKAITASK — PLAN.md §6.1.2 s/d §6.1.5. Nambah kata = nambah satu baris di sini, bukan ngedit logika. Semua kunci HARUS huruf kecil. Taruh sinonim baru di `slang` (redirect ke kata baku yang udah dikenal dict lain) — itu paling murah karena applySlang jalan paling pertama, jadi satu baris otomatis nyambung ke semua pengecekan di bawahnya.",
 
   "slang": {
     "tar": "nanti",
@@ -19,8 +19,11 @@
     "tanggl": "tanggal",
     "jm": "jam",
     "jem": "jam",
+    "jamnya": "jam",
     "mgu": "minggu",
     "mgg": "minggu",
+    "pekan": "minggu",
+    "ahad": "minggu",
     "bln": "bulan",
     "buln": "bulan",
     "thn": "tahun",
@@ -39,6 +42,7 @@
     "kemis": "kamis",
     "jum'at": "jumat",
     "jumaat": "jumat",
+    "jumaah": "jumat",
     "saptu": "sabtu",
     "sabtuan": "sabtu",
     "minggon": "minggu",
@@ -49,29 +53,59 @@
     "sore2": "sore",
     "malem": "malam",
     "mlm": "malam",
+    "malemnya": "malam",
     "subuhan": "subuh",
     "sblm": "sebelum",
     "sebelom": "sebelum",
+    "sblum": "sebelum",
+    "sblumnya": "sebelum",
     "stlh": "setelah",
     "abis": "setelah",
     "habis": "setelah",
+    "abisnya": "setelah",
+    "abiz": "setelah",
+    "sesudah": "setelah",
+    "sesudahnya": "setelah",
     "sampe": "sampai",
     "smp": "sampai",
     "s/d": "sampai",
     "sd": "sampai",
     "sktr": "sekitar",
+    "sktrnya": "sekitar",
     "sekitaran": "sekitar",
     "kurleb": "sekitar",
     "kira2": "sekitar",
+    "kra2": "sekitar",
     "kisaran": "sekitar",
     "krg": "kurang",
     "lwt": "lewat",
     "stgh": "setengah",
-    "seperempat": "seperempat"
+    "seperempat": "seperempat",
+    "bntr": "sebentar",
+    "bntar": "sebentar",
+    "sbntr": "sebentar",
+    "ingetinin": "ingetin",
+    "catetin": "catat",
+    "catatin": "catat",
+    "ctt": "catat",
+    "bkin": "bikin",
+    "bkinin": "bikinin",
+    "msukin": "masukin",
+    "mskin": "masukin",
+    "tmbahin": "tambahin",
+    "jdwal": "jadwal",
+    "jdwalin": "jadwalin",
+    "remider": "reminder",
+    "remindr": "reminder",
+    "savee": "save",
+    "savein": "save",
+    "kayaknya": "mungkin",
+    "keknya": "mungkin",
+    "kayanya": "mungkin"
   },
 
   "drop": [
-    "gw", "gue", "gua", "aku", "saya", "ane", "aq", "akuu", "gwe",
+    "gw", "gue", "gua", "aku", "saya", "sy", "ane", "aq", "akuu", "gwe",
     "ad", "ada", "ade",
     "mau", "mo", "pengen", "pgn", "kepengen", "pengin",
     "udah", "udh", "dah", "sdh", "sudah",
@@ -84,10 +118,22 @@
     "dg", "dgn", "dengan",
     "sebelum", "setelah",
     "tolong", "plis", "pls", "please", "coba",
-    "eh", "hmm", "oke", "ok", "oh"
+    "eh", "hmm", "oke", "ok", "oh",
+    "duh", "waduh", "nah",
+    "woy", "woi", "btw", "fyi",
+    "cuy", "bre", "sob", "gaes", "guys", "nder",
+    "yaudah", "yauda", "udahlah", "yaudalah",
+    "bantu", "bakal", "perlu", "rencana", "kepikiran",
+    "weh", "oi", "oy", "bang", "bos", "gan", "admin", "coy",
+    "jir", "njir", "bjir", "anjir", "anjay",
+    "wkwk", "wk", "wkwkwk", "kwkwk", "hehe", "haha", "hahaha", "awokwok", "lol", "lmao",
+    "okey", "okee", "sip", "mantap", "gas", "gaskeun"
   ],
 
-  "dropIfTrailing": ["ke", "di", "dari", "buat", "bwt", "utk", "untuk", "yg", "yang", "sama", "sm"],
+  "dropIfTrailing": [
+    "ke", "di", "dari", "buat", "bwt", "utk", "untuk", "yg", "yang", "sama", "sm",
+    "bagi", "kepada", "pada"
+  ],
 
   "pastRef": ["kemarin", "tadi", "barusan", "semalam", "semalem"],
 
@@ -96,22 +142,39 @@
     "lho", "loh", "kek", "gitu", "gt", "gini",
     "aja", "aj", "ajah", "doang", "doangan",
     "banget", "bgt", "bener", "beneran",
-    "jg", "juga", "pula"
+    "jg", "juga", "pula",
+    "terus", "trs", "trus", "jadi", "berarti",
+    "iya", "lah", "nihh", "malah",
+    "pokoknya", "intinya", "sebenernya", "sebenarnya",
+    "cuma", "cumak", "kayak", "sekalian"
   ],
 
   "intent": {
     "schedule": [
       "masukin jadwal", "masukin ke jadwal", "masukin ke kalender", "masukin kalender",
-      "jadwalin", "jadwalkan", "catat jadwal", "tambah jadwal", "set jadwal", "jadwal"
+      "jadwalin", "jadwalkan", "catat jadwal", "tambah jadwal", "set jadwal", "jadwal",
+      "atur jadwal", "susun jadwal", "masukin agenda", "masukin ke agenda",
+      "catat di kalender", "tambahin ke kalender",
+      "buat jadwal", "bikin jadwal", "tambahin jadwal",
+      "schedule", "booking", "book"
     ],
     "remind": [
       "ingetin", "ingatkan", "ingetin gw", "remind", "reminder",
-      "jangan lupa", "jgn lupa", "alarm", "kasih alarm"
+      "jangan lupa", "jgn lupa", "alarm", "kasih alarm",
+      "ingetin dong", "jangan lupa ya", "tolong ingetin", "inget2",
+      "inget", "ingat",
+      "buat reminder", "buat alarm", "bikin reminder", "bikin alarm",
+      "tambahin reminder", "tambahin alarm", "masukin reminder", "masukin alarm",
+      "aktifin reminder", "aktifkan reminder", "pasang reminder", "pasang alarm",
+      "set alarm", "set reminder",
+      "biar ga lupa", "supaya ga lupa", "takut lupa", "nanti lupa", "jangan sampai lupa"
     ],
     "neutral": [
       "tambahin", "tambah", "bikin", "bikinin", "buat", "buatin",
       "catat", "catet", "note", "simpen", "simpan",
-      "todo", "tugas", "task"
+      "todo", "tugas", "task",
+      "masukin", "masukkan", "nyatet", "catetin",
+      "noted", "tambahkan", "save", "set", "setup"
     ]
   },
 
@@ -121,21 +184,41 @@
     "janjian", "ketemu", "ketemuan", "nongkrong", "ngopi",
     "makan siang", "makan malam", "lunch", "dinner",
     "acara", "undangan", "kondangan", "wisuda", "ultah", "ulang tahun",
-    "interview", "wawancara", "sidang", "presentasi", "standup", "briefing"
+    "interview", "wawancara", "sidang", "presentasi", "standup", "briefing",
+    "checkup", "check up", "medical checkup", "kontrol",
+    "futsal", "gym", "sparring", "latihan bareng",
+    "les", "bimbel",
+    "reuni", "gathering", "open house", "konser", "nonton bareng", "nobar",
+    "sunatan", "khitanan", "syukuran", "aqiqah", "tahlilan"
   ],
 
   "nounTask": [
     "revisi", "edit", "editing", "render", "export", "upload",
     "kirim", "kirimin", "bales", "balesin", "balas", "follow up", "fu",
     "beli", "beliin", "bayar", "transfer", "top up",
-    "nulis", "tulis", "draft", "riset", "research", "baca",
-    "cek", "ngecek", "review", "periksa", "rapihin", "rapikan", "benerin"
+    "nulis", "tulis", "tulisin", "tuliskan", "rekam", "draft", "riset", "research", "baca",
+    "input", "inputin", "inputkan",
+    "cek", "ngecek", "review", "periksa", "rapihin", "rapikan", "benerin",
+    "susun laporan", "bikin laporan", "laporan",
+    "input data", "entry data",
+    "approve", "approval", "submit", "upload dokumen",
+    "scan", "fotokopi", "print",
+    "siapin", "siapkan", "persiapan",
+    "beresin", "bersihin",
+    "packing", "kirim paket", "antar", "jemput"
   ],
 
   "priorityWords": {
     "urgent": 1,
     "mendesak": 1,
     "asap": 1,
+    "darurat": 1,
+    "genting": 1,
+    "krusial": 1,
+    "gawat": 1,
+    "prioritas utama": 1,
+    "prioritas tinggi": 1,
+    "top priority": 1,
     "penting": 2,
     "kudu": 2,
     "harus": 2,
@@ -143,7 +226,11 @@
     "wajib": 2,
     "santai": 4,
     "kapanaja": 4,
-    "nanti aja": 4
+    "gapenting": 4,
+    "ga penting": 4,
+    "prioritas rendah": 4,
+    "low priority": 4,
+    "no rush": 4
   },
 
   "durationPhrase": {
@@ -157,14 +244,17 @@
     "seharian": 480
   },
 
-  "approx": ["sekitar", "kurang lebih"],
+  "approx": ["sekitar", "kurang lebih", "mungkin"],
 
   "daypart": {
     "subuh": "05:00",
+    "dini hari": "02:00",
+    "menjelang subuh": "04:00",
     "pagi": "08:00",
     "siang": "12:00",
     "sore": "16:00",
     "petang": "17:00",
+    "menjelang malam": "17:30",
     "malam": "20:00",
     "tengah malam": "00:00",
     "tengah hari": "12:00",
@@ -194,7 +284,7 @@
 
   "months": {
     "januari": 1, "jan": 1,
-    "februari": 2, "feb": 2, "pebruari": 2,
+    "februari": 2, "feb": 2, "pebruari": 2, "febuari": 2,
     "maret": 3, "mar": 3,
     "april": 4, "apr": 4,
     "mei": 5,
@@ -203,7 +293,7 @@
     "agustus": 8, "agu": 8, "ags": 8, "agt": 8,
     "september": 9, "sep": 9, "sept": 9,
     "oktober": 10, "okt": 10, "oct": 10,
-    "november": 11, "nov": 11, "nop": 11,
+    "november": 11, "nov": 11, "nop": 11, "nopember": 11,
     "desember": 12, "des": 12, "dec": 12
   },
 
@@ -211,10 +301,17 @@
     "ringan": "low",
     "santai": "low",
     "gampang": "low",
+    "mudah": "low",
+    "simpel": "low",
+    "simple": "low",
     "sedang": "medium",
     "normal": "medium",
+    "medium": "medium",
     "berat": "high",
     "susah": "high",
+    "sulit": "high",
+    "rumit": "high",
+    "kompleks": "high",
     "fokus": "high"
   }
 }
