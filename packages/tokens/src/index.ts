@@ -1,5 +1,5 @@
 /**
- * Design token KaiTask — PLAN.md §7
+ * Design token HaKaiTask — PLAN.md §7
  *
  * Satu sumber kebenaran buat web (CSS variables) dan mobile (JS object).
  * Aturan keras: `accent` HANYA dipakai buat overdue & P1. Semua hirarki lain

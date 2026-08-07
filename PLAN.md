@@ -1,4 +1,4 @@
-# KaiTask — Planning Document
+# HaKaiTask — Planning Document
 
 Personal to-do list untuk web + Android (APK).
 Dokumen ini acuan tunggal sebelum & selama development.
@@ -49,7 +49,7 @@ Karena mayoritas kompleksitas ada di scoring, sync, dan parsing — bukan di UI 
 ### 2.2 Struktur repo
 
 ```
-kaitask/
+hakaitask/
 ├─ package.json                  # pnpm workspace root
 ├─ pnpm-workspace.yaml
 ├─ turbo.json
@@ -453,7 +453,7 @@ campur          "masukin jadwal rapat klien bsk jam 2 !p1"
 | 22 | Template task | "Produksi Vlog" → auto 6 subtask |
 | 23 | Share target Android | Share link YouTube → langsung jadi task |
 | 24 | Impor `.ics` read-only | Alternatif ringan kalau nanti kepengin lihat jadwal luar (§11.1) |
-| 25 | Ekspor feed `.ics` | Task KaiTask kebaca dari app kalender lain, satu arah |
+| 25 | Ekspor feed `.ics` | Task HaKaiTask kebaca dari app kalender lain, satu arah |
 
 **8 fitur berikut statusnya committed** dan dispesifikasi lengkap di §6:
 quick-add NL (§6.1), time blocking (§6.2), focus/pomodoro (§6.3), review mingguan (§6.4),
@@ -968,7 +968,7 @@ Batas 6 jam itu disengaja. Rencana yang menjadwalkan 11 jam kerja bukan rencana 
 | Layar nyala | `navigator.wakeLock` | `expo-keep-awake` |
 | Timer jalan pas ditutup | Simpan `startedAt`, hitung selisih pas balik — **jangan andelin `setInterval`** | idem |
 | Notif selesai | Notification API | `expo-notifications` |
-| Timer di background | Judul tab jadi `24:13 · KaiTask` | Notifikasi ongoing (Android foreground-style) |
+| Timer di background | Judul tab jadi `24:13 · HaKaiTask` | Notifikasi ongoing (Android foreground-style) |
 
 **Aturan:** timer **gak pernah** disimpan sebagai countdown yang jalan. Selalu `endsAt = startedAt + durasi`, sisa waktu dihitung dari jam sistem. Ini bikin dia kebal terhadap tab di-suspend, HP dikunci, atau app di-kill.
 
@@ -1357,7 +1357,7 @@ Ini interaksi yang paling sering dilakuin. Kalau dia enak, app-nya bakal nagih.
 
 Dibatalkan **7 Agustus 2026**, sebelum implementasi dimulai — jadi gak ada kode yang kebuang.
 
-**Yang hilang:** jadwal dari luar KaiTask (meeting, kelas, undangan) gak otomatis kelihatan. Harus diisi manual sebagai `busy_blocks` kalau mau ikut diperhitungkan di time blocking.
+**Yang hilang:** jadwal dari luar HaKaiTask (meeting, kelas, undangan) gak otomatis kelihatan. Harus diisi manual sebagai `busy_blocks` kalau mau ikut diperhitungkan di time blocking.
 
 **Yang didapat:**
 
@@ -1369,14 +1369,14 @@ Dibatalkan **7 Agustus 2026**, sebelum implementasi dimulai — jadi gak ada kod
 | Setup pihak ketiga | Google Cloud project, consent screen, 2 OAuth client | tidak ada |
 | Login ulang berkala | tiap 7 hari (batas consent screen mode Testing) | tidak ada |
 | Waktu pengerjaan | +2–3 hari | dihemat |
-| Sumber kebenaran waktu | dua (KaiTask & Google) → butuh resolusi konflik | satu |
+| Sumber kebenaran waktu | dua (HaKaiTask & Google) → butuh resolusi konflik | satu |
 
-Yang terakhir itu yang paling berharga. Sync dua arah artinya dua sistem sama-sama ngaku paling benar soal kapan sesuatu terjadi — dan tiap kali beda, ada yang harus ngalah. Tanpa itu, KaiTask punya satu sumber kebenaran dan seluruh lapisan sync tinggal ngurusin satu hal: device lo sendiri.
+Yang terakhir itu yang paling berharga. Sync dua arah artinya dua sistem sama-sama ngaku paling benar soal kapan sesuatu terjadi — dan tiap kali beda, ada yang harus ngalah. Tanpa itu, HaKaiTask punya satu sumber kebenaran dan seluruh lapisan sync tinggal ngurusin satu hal: device lo sendiri.
 
 **Kalau nanti berubah pikiran**, jalur paling murah bukan OAuth penuh, tapi:
 
 1. **Impor `.ics` read-only** — Google Calendar nyediain URL iCal privat per kalender. Tarik, parse, tampilin sebagai blok busy. Tanpa OAuth, tanpa token, tanpa Edge Function. Sekitar setengah hari kerja dan nutup ~80% manfaat sync baca.
-2. **Ekspor feed `.ics`** — KaiTask nyediain URL yang bisa di-subscribe app kalender lain. Satu arah, gak ada konflik.
+2. **Ekspor feed `.ics`** — HaKaiTask nyediain URL yang bisa di-subscribe app kalender lain. Satu arah, gak ada konflik.
 
 Dua-duanya masuk backlog §5.5 (#24, #25). OAuth penuh sengaja **tidak** ditaruh di backlog.
 

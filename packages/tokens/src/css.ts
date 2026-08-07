@@ -24,7 +24,7 @@ export function generateCss(): string {
     ])
     .join("\n");
 
-  return `/* Dihasilkan dari @kaitask/tokens — jangan diedit manual. */
+  return `/* Dihasilkan dari @hakaitask/tokens — jangan diedit manual. */
 :root {
 ${colorVars("light")}
 

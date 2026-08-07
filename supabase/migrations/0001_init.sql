@@ -1,4 +1,4 @@
--- KaiTask — skema awal (PLAN.md §3.2)
+-- HaKaiTask — skema awal (PLAN.md §3.2)
 -- Semua tabel pakai RLS dengan policy auth.uid() = user_id.
 -- Tidak ada rahasia sisi server, jadi tidak butuh service role key.
 

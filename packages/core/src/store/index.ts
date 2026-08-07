@@ -131,7 +131,7 @@ export const useKaiStore = create<KaiState>()(
       energyMode: () => get().settings?.energyMode ?? DEFAULT_SETTINGS.energyMode,
     }),
     {
-      name: "kaitask",
+      name: "hakaitask",
       version: 1,
       storage: createJSONStorage(() => {
         if (!storageAdapter) {

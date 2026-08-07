@@ -1,5 +1,5 @@
 /**
- * Tipe inti KaiTask — PLAN.md §3.1
+ * Tipe inti HaKaiTask — PLAN.md §3.1
  *
  * ATURAN KERAS: file ini (dan seluruh packages/core) tidak boleh meng-import
  * apa pun dari `react`, `react-native`, atau DOM. Murni TypeScript.

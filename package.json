@@ -1,5 +1,5 @@
 {
-  "name": "kaitask",
+  "name": "hakaitask",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@11.20.0",
@@ -7,7 +7,7 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:watch": "pnpm --filter @kaitask/core test:watch"
+    "test:watch": "pnpm --filter @hakaitask/core test:watch"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
