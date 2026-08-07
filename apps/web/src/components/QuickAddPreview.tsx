@@ -84,7 +84,7 @@ export function QuickAddPreview({
               initial={{ opacity: 0, scale: 0.94 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={normalTransition}
-              className={chip.accent ? "badge-solid !bg-accent" : "badge-outline"}
+              className={chip.accent ? "chip-active !bg-accent" : "chip"}
             >
               {chip.label}
             </motion.span>
@@ -124,7 +124,7 @@ export function QuickAddHighlighted({
       <mark
         key={`${r.start}-${i}`}
         title={r.label}
-        className="rounded-[3px] bg-surface px-0.5 text-ink70"
+        className="rounded-[3px] bg-subtle px-0.5 text-ink70"
       >
         {value.slice(r.start, r.end)}
       </mark>,

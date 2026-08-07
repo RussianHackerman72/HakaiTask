@@ -49,12 +49,12 @@ export function UpcomingList({
 
   return (
     <section>
-      <h2 className="t-meta text-ink40">Berikutnya</h2>
+      <h2 className="text-[15px] font-bold text-ink">Berikutnya</h2>
       <motion.ul
         variants={listContainer}
         initial="hidden"
         animate="show"
-        className="mt-3 border-t-2 border-ink"
+        className="card mt-3 overflow-hidden"
       >
         <AnimatePresence initial={false}>
           {entries.map((entry) =>
@@ -81,7 +81,7 @@ function Row({ children }: { children: React.ReactNode }) {
       variants={listItem}
       exit="exit"
       layout
-      className="flex items-center gap-4 overflow-hidden border-b border-line py-3"
+      className="flex items-center gap-4 overflow-hidden border-b border-line px-5 py-4 last:border-b-0"
     >
       {children}
     </motion.li>
@@ -102,7 +102,7 @@ function TaskRow({ task, now, onOpen }: { task: Task; now: Date; onOpen: () => v
         size={18}
       />
 
-      <span className={`t-mono w-20 shrink-0 ${overdue ? "text-accent" : "text-ink40"}`}>
+      <span className={`t-num w-20 shrink-0 ${overdue ? "text-accent" : "text-ink40"}`}>
         {when}
       </span>
 
@@ -115,7 +115,7 @@ function TaskRow({ task, now, onOpen }: { task: Task; now: Date; onOpen: () => v
       </button>
 
       {task.priority <= 2 && (
-        <span className={task.priority === 1 ? "badge-solid !bg-accent shrink-0" : "badge-outline shrink-0"}>
+        <span className={task.priority === 1 ? "chip-active !bg-accent shrink-0" : "chip shrink-0"}>
           P{task.priority}
         </span>
       )}
@@ -130,11 +130,11 @@ function BusyRow({ block, now }: { block: BusyBlock; now: Date }) {
   return (
     <Row>
       <span aria-hidden className="w-[18px] shrink-0" />
-      <span className="t-mono w-20 shrink-0 text-ink40">
+      <span className="t-num w-20 shrink-0 text-ink40">
         {sameDay ? clock(start) : whenLabel(block.startAt, now)}
       </span>
       <span className="min-w-0 flex-1 truncate text-[15px] text-ink70">{block.title}</span>
-      <span className="t-mono shrink-0 text-ink40">sibuk</span>
+      <span className="t-num shrink-0 text-ink40">sibuk</span>
     </Row>
   );
 }

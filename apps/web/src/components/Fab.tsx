@@ -13,7 +13,7 @@ export function Fab({ onClick }: { onClick: () => void }) {
       animate={{ opacity: 1, scale: 1 }}
       transition={enterTransition}
       aria-label="Tambah task"
-      className="fixed bottom-6 right-6 z-30 grid h-16 w-16 place-items-center rounded-full border-2 border-ink bg-ink text-[26px] font-bold text-paper transition-colors duration-[--dur-fast]"
+      className="fixed bottom-6 right-6 z-30 grid h-16 w-16 place-items-center rounded-full bg-ink text-[26px] font-bold text-surface transition-opacity duration-[--dur-fast] hover:opacity-90"
     >
       +
     </motion.button>

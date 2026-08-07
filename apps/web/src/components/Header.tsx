@@ -23,7 +23,7 @@ export function Header({
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div className="flex items-center gap-3">
         <div className="t-meta text-ink40">{headerDate(now)}</div>
-        <nav className="flex gap-1 rounded-full border-2 border-ink p-1">
+        <nav className="flex gap-1 rounded-full bg-surface p-1">
           <NavTab active={page === "dashboard"} onClick={() => onNavigate("dashboard")}>
             Dashboard
           </NavTab>
@@ -37,7 +37,7 @@ export function Header({
         <SyncBadge />
 
         <div className="flex items-center gap-2">
-          <span className="t-mono text-ink40">
+          <span className="t-num text-ink40">
             {resolved === "dark" ? "gelap" : "terang"}
           </span>
           <Toggle
@@ -52,13 +52,13 @@ export function Header({
             type="button"
             whileTap={press}
             onClick={onSignOut}
-            className="t-mono text-ink40 transition-colors duration-[--dur-fast] hover:text-ink"
+            className="t-num text-ink40 transition-colors duration-[--dur-fast] hover:text-ink"
           >
             keluar
           </motion.button>
         )}
 
-        <div className="t-mono text-ink40">{clock(now)}</div>
+        <div className="t-num text-ink40">{clock(now)}</div>
       </div>
     </header>
   );
@@ -77,8 +77,8 @@ function NavTab({
     <button
       type="button"
       onClick={onClick}
-      className={`t-meta rounded-full px-3.5 py-1.5 transition-colors duration-[--dur-fast] ${
-        active ? "bg-ink text-paper" : "text-ink40 hover:text-ink"
+      className={`t-meta rounded-full px-4 py-2 transition-colors duration-[--dur-fast] ${
+        active ? "bg-ink text-surface" : "text-ink40 hover:text-ink"
       }`}
     >
       {children}

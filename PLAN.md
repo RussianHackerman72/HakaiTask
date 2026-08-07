@@ -1201,34 +1201,49 @@ Pakai `rrule` (npm) — kecil, dipakai di mana-mana, jalan di RN.
 
 ## 7. Design System
 
-**Revisi 7 Agustus 2026:** gaya diganti dari minimalis serif tipis ke **"bold minimalism"** —
-kertas krem, kartu putih, garis TEBAL hitam (2px), tipografi sans ekstra-tebal, aksi utama
-jadi pil hitam solid. Token lama (serif display, border 1px) udah gak dipakai lagi.
+**Revisi 7 Agustus 2026:** gaya diganti dari minimalis serif tipis ke **"soft minimalism"** —
+background abu-abu DINGIN, kartu putih polos **tanpa garis sama sekali**, sudut membulat besar
+(28px), tipografi geometric sans tebal, aksi utama jadi pil hitam solid.
+
+> Sempat salah belok ke arah "bold minimalism" (kertas krem + garis hitam 2px). Itu
+> neubrutalism, bukan yang dimau — dicabut total. Elevasi sekarang murni dari kontras
+> **surface putih vs paper abu-abu**, bukan dari garis.
 
 ### 7.1 Warna
 
 ```
                 LIGHT       DARK
-ink             #111113     #F5F5F2     teks utama, garis kartu
-ink-70          #48484D     #B8B8B4     teks sekunder
-ink-40          #8C8C92     #7A7A7E     teks tersier / meta
-line            #111113     #F5F5F2     sama kayak ink — garisnya emang tebal & gelap
-surface         #FFFFFF     #1B1B1D     kartu, elevated
-paper           #F2F0EA     #101012     background (krem, bukan putih polos)
+ink             #0D0D0F     #F7F7F5     teks utama
+ink-70          #5A5A60     #A8A8AD     teks sekunder
+ink-40          #9A9AA1     #74747A     teks tersier / meta
+line            #E7E7E7     #2B2B2E     divider tipis doang, nyaris gak kelihatan
+subtle          #F1F1F1     #27272B     isian chip & tombol ikon DI DALAM kartu
+surface         #FFFFFF     #1A1A1C     kartu
+paper           #F0F0F0     #0E0E10     background (abu dingin, bukan krem)
 accent          #DC2626     #EF4444     HANYA overdue & P1
 ```
 
-**Aturan:** `accent` cuma boleh dipakai buat overdue dan P1. Selain itu semua hirarki dibangun dari **ukuran, berat font, dan jarak** — plus sekarang garis tebal & badge pil solid. Ini yang bikin minimalis kelihatan mahal, bukan murah.
+**Aturan:** `accent` cuma boleh dipakai buat overdue dan P1. Selain itu semua hirarki dibangun dari **ukuran, berat font, dan jarak** — plus kontras surface vs paper. Kartu **gak pakai border dan gak pakai shadow**.
+
+**Jebakan yang udah kena sekali:** elemen yang duduk di atas *paper* (nav bulan, toggle tema,
+tombol Google) gak boleh pakai isian `subtle` — dia bakal lenyap ketelan paper. Buat konteks itu
+pakai `surface` (putih). `subtle` cuma buat elemen yang duduk di dalam kartu putih.
 
 ### 7.2 Tipografi
 
+Fontnya **geometric sans** (Plus Jakarta Sans), bukan grotesk teknis kayak Geist —
+ini yang bikin karakternya beda. Satu keluarga buat semua, dibedain lewat berat & ukuran.
+
 | Peran | Font | Ukuran / Berat |
 |---|---|---|
-| Display (sapaan) | **Geist** | 40–44px / 800, tracking −0.02em — bukan serif lagi |
-| Heading | **Geist** | 20–28px / 700–800 |
-| Body & UI | **Geist** | 15–16px / 500 |
-| Meta / label | **Geist** | 12–13px / 700, tracking +0.03em, UPPERCASE |
-| Angka & waktu | **Geist Mono** | 12–14px / 500, `tabular-nums` |
+| Display (sapaan) | **Plus Jakarta Sans** | 40–44px / 800, tracking −0.03em |
+| Heading | **Plus Jakarta Sans** | 20–28px / 700–800 |
+| Body & UI | **Plus Jakarta Sans** | 15–16px / 500 |
+| Label seksi | **Plus Jakarta Sans** | 13–15px / 700, **sentence case — bukan UPPERCASE** |
+| Angka & waktu | **Plus Jakarta Sans** | 13px / 600, `tabular-nums` |
+
+Monospace (**Geist Mono**) sengaja dipakai tipis-tipis: cuma buat nampilin teks mentah
+di preview parser. Di luar itu bikin UI kelihatan techy dan keluar dari gaya referensi.
 
 Alternatif sans: **Inter Tight**. Semua tersedia di Google Fonts / Fontsource →
 jalan di web maupun Expo (`expo-font`).
@@ -1236,9 +1251,10 @@ jalan di web maupun Expo (`expo-font`).
 ### 7.3 Spacing & bentuk
 
 - Skala spacing: `4 8 12 16 24 32 48 64 96`
-- Radius: `8px` (kecil), `14px` (card), `24px` (sheet)
+- Radius: `14px` (kecil), `28px` (card), `36px` (sheet), `9999px` (pil & chip)
 - Lebar konten maksimum: `640px` di web — sengaja sempit, biar fokus
-- Border `1px solid line`. **Tanpa drop shadow** — pakai border & surface buat elevasi.
+- **Kartu tanpa border, tanpa drop shadow.** Elevasi dari kontras surface vs paper.
+  `line` cuma buat divider tipis di dalam kartu (antar baris list).
 
 ### 7.4 Motion
 

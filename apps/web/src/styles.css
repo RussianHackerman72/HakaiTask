@@ -1,13 +1,12 @@
 @import "tailwindcss";
 @import "./tokens.generated.css";
 
-@import "@fontsource/geist-sans/400.css";
-@import "@fontsource/geist-sans/500.css";
-@import "@fontsource/geist-sans/600.css";
-@import "@fontsource/geist-sans/700.css";
-@import "@fontsource/geist-sans/800.css";
+@import "@fontsource/plus-jakarta-sans/400.css";
+@import "@fontsource/plus-jakarta-sans/500.css";
+@import "@fontsource/plus-jakarta-sans/600.css";
+@import "@fontsource/plus-jakarta-sans/700.css";
+@import "@fontsource/plus-jakarta-sans/800.css";
 @import "@fontsource/geist-mono/400.css";
-@import "@fontsource/geist-mono/500.css";
 
 /* Jembatan token → utility Tailwind. Nilai aslinya tetap dari packages/tokens. */
 @theme inline {
@@ -15,6 +14,7 @@
   --color-ink70: var(--c-ink70);
   --color-ink40: var(--c-ink40);
   --color-line: var(--c-line);
+  --color-subtle: var(--c-subtle);
   --color-surface: var(--c-surface);
   --color-paper: var(--c-paper);
   --color-accent: var(--c-accent);
@@ -53,7 +53,7 @@
 
   ::selection {
     background: var(--c-ink);
-    color: var(--c-paper);
+    color: var(--c-surface);
   }
 
   :focus-visible {
@@ -65,18 +65,26 @@
 @layer components {
   .t-display {
     font-family: var(--font-display);
-    font-size: clamp(34px, 8vw, var(--t-display-size));
-    line-height: 1.05;
+    font-size: clamp(32px, 7vw, var(--t-display-size));
+    line-height: 1.08;
     font-weight: var(--t-display-weight);
     letter-spacing: var(--t-display-tracking);
   }
 
+  /* Label seksi — sentence case, bukan uppercase. */
   .t-meta {
     font-size: var(--t-meta-size);
     line-height: var(--t-meta-leading);
     font-weight: var(--t-meta-weight);
     letter-spacing: var(--t-meta-tracking);
-    text-transform: uppercase;
+  }
+
+  /* Angka & waktu: sans yang sama, lebar digit dikunci biar gak goyang. */
+  .t-num {
+    font-size: var(--t-num-size);
+    line-height: var(--t-num-leading);
+    font-weight: var(--t-num-weight);
+    font-variant-numeric: tabular-nums;
   }
 
   .t-mono {
@@ -86,79 +94,109 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Kartu ala bold-minimalism: garis tebal hitam, tanpa shadow. */
+  /*
+   * Kartu: putih polos di atas paper abu-abu. TANPA border, tanpa shadow —
+   * elevasinya murni dari kontras surface vs paper (§7.3).
+   */
   .card {
-    border-width: 2px;
-    border-color: var(--c-ink);
     background: var(--c-surface);
     border-radius: var(--radius-md);
   }
 
-  /* Pil aksi utama — hitam solid, teks krem. */
+  /* Pil aksi utama — hitam solid, teks warna surface. */
   .btn-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border-radius: var(--radius-full, 9999px);
+    border-radius: 9999px;
     background: var(--c-ink);
-    color: var(--c-paper);
+    color: var(--c-surface);
     font-weight: 700;
-    padding: 12px 22px;
+    padding: 13px 24px;
     white-space: nowrap;
+    transition: opacity 160ms;
+  }
+  .btn-pill:hover {
+    opacity: 0.88;
   }
 
-  .btn-pill-outline {
+  /*
+   * Aksi sekunder yang duduk DI ATAS PAPER (bukan di dalam kartu) — makanya
+   * isiannya surface/putih, bukan subtle: kalau subtle dia lenyap ketelan paper.
+   */
+  .btn-pill-soft {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border-radius: var(--radius-full, 9999px);
-    border-width: 2px;
-    border-color: var(--c-ink);
+    border-radius: 9999px;
+    background: var(--c-surface);
     color: var(--c-ink);
     font-weight: 700;
-    padding: 10px 20px;
+    padding: 13px 24px;
     white-space: nowrap;
+    transition: background-color 160ms;
   }
 
-  /* Badge bulat kecil — dipakai buat prioritas, tag, filter chip. */
-  .badge-solid {
+  /* Chip tidak aktif — abu lembut, tanpa garis (mirip "Living Room" di referensi). */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    background: var(--c-subtle);
+    color: var(--c-ink70);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 7px 15px;
+    white-space: nowrap;
+    transition: background-color 160ms;
+  }
+
+  /* Chip aktif / badge penting — hitam solid (mirip "All" di referensi). */
+  .chip-active {
     display: inline-flex;
     align-items: center;
     border-radius: 9999px;
     background: var(--c-ink);
-    color: var(--c-paper);
+    color: var(--c-surface);
     font-weight: 700;
     font-size: 13px;
-    padding: 6px 14px;
+    padding: 7px 15px;
     white-space: nowrap;
   }
 
-  .badge-outline {
-    display: inline-flex;
-    align-items: center;
+  /* Tombol ikon bulat DI DALAM kartu putih — isian abu lembut. */
+  .icon-btn {
+    display: grid;
+    place-items: center;
     border-radius: 9999px;
-    border-width: 2px;
-    border-color: var(--c-ink);
+    background: var(--c-subtle);
     color: var(--c-ink);
-    font-weight: 700;
-    font-size: 13px;
-    padding: 5px 13px;
-    white-space: nowrap;
+    transition: background-color 160ms;
   }
 
-  /* Toggle switch iOS-style — dipakai buat setting boolean (§7 bold-minimalism). */
+  /* Versi buat DI ATAS paper — kebalikannya, isiannya putih. */
+  .icon-btn-paper {
+    display: grid;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--c-surface);
+    color: var(--c-ink);
+    transition: background-color 160ms;
+  }
+
+  /* Toggle switch — track hitam solid pas aktif, abu lembut pas mati. */
   .switch-track {
     position: relative;
     display: inline-flex;
     align-items: center;
-    width: 46px;
-    height: 27px;
+    width: 48px;
+    height: 28px;
     border-radius: 9999px;
-    border-width: 2px;
-    border-color: var(--c-ink);
-    background: var(--c-paper);
+    /* Bukan --c-subtle: switch ini duduk di atas paper, bukan di atas kartu,
+       jadi butuh kontras sendiri biar bentuk pill-nya kelihatan. */
+    background: color-mix(in srgb, var(--c-ink) 15%, transparent);
     transition: background-color 160ms;
     flex-shrink: 0;
   }
@@ -167,16 +205,18 @@
   }
   .switch-thumb {
     position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 19px;
-    height: 19px;
+    top: 3px;
+    left: 3px;
+    width: 22px;
+    height: 22px;
     border-radius: 9999px;
-    background: var(--c-ink);
+    background: var(--c-surface);
     transition: transform 160ms;
   }
+  .switch-track[data-on="false"] .switch-thumb {
+    background: var(--c-surface);
+  }
   .switch-track[data-on="true"] .switch-thumb {
-    background: var(--c-paper);
-    transform: translateX(19px);
+    transform: translateX(20px);
   }
 }

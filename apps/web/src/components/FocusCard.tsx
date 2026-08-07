@@ -28,7 +28,7 @@ export function FocusCard({
       animate="show"
       whileHover={{ y: -2 }}
       transition={{ duration: 0.16 }}
-      className={`card p-6 ${overdue ? "border-accent" : "border-ink"}`}
+      className={`card p-6 ${overdue ? "border-2 border-accent" : ""}`}
     >
       <div className="flex items-start gap-4">
         <div className="pt-1">
@@ -54,14 +54,14 @@ export function FocusCard({
 
           {(task.priority <= 2 || when || duration) && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {overdue && <span className="badge-solid !bg-accent">Lewat</span>}
+              {overdue && <span className="chip-active !bg-accent">Lewat</span>}
               {task.priority <= 2 && (
-                <span className={overdue ? "badge-outline" : "badge-solid"}>
+                <span className={overdue ? "chip" : "chip-active"}>
                   P{task.priority}
                 </span>
               )}
-              {when && <span className="t-mono text-ink40">{when}</span>}
-              {duration && <span className="t-mono text-ink40">{duration}</span>}
+              {when && <span className="t-num text-ink40">{when}</span>}
+              {duration && <span className="t-num text-ink40">{duration}</span>}
             </div>
           )}
 
@@ -70,7 +70,7 @@ export function FocusCard({
 
         <span
           aria-hidden
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-ink text-ink"
+          className="icon-btn h-9 w-9 shrink-0 text-[15px]"
         >
           →
         </span>
@@ -90,7 +90,7 @@ function SubtaskProgress({ done, total }: { done: number; total: number }) {
           transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
         />
       </div>
-      <span className="t-mono text-ink40">
+      <span className="t-num text-ink40">
         {done}/{total}
       </span>
     </div>

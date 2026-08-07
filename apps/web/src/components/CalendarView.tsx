@@ -51,7 +51,7 @@ export function CalendarView({
               setViewMonth(new Date(now.getFullYear(), now.getMonth(), 1));
               setSelected(new Date(now));
             }}
-            className="btn-pill-outline py-2 text-[13px]"
+            className="btn-pill-soft py-2 text-[13px]"
           >
             Hari ini
           </button>
@@ -82,11 +82,11 @@ export function CalendarView({
                 onClick={() => setSelected(day)}
                 className={`relative aspect-square rounded-2xl text-[15px] font-bold transition-colors duration-[--dur-fast] ${
                   isSelected
-                    ? "bg-ink text-paper"
+                    ? "bg-ink text-surface"
                     : isToday
-                      ? "border-2 border-ink text-ink"
+                      ? "bg-subtle text-ink"
                       : inMonth
-                        ? "text-ink hover:bg-surface"
+                        ? "text-ink hover:bg-subtle"
                         : "text-ink40"
                 }`}
               >
@@ -95,7 +95,7 @@ export function CalendarView({
                   <span
                     aria-hidden
                     className={`absolute bottom-1.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full ${
-                      isSelected ? "bg-paper" : "bg-ink"
+                      isSelected ? "bg-surface" : "bg-ink"
                     }`}
                   />
                 )}
@@ -128,11 +128,11 @@ export function CalendarView({
                   layout
                   className="card flex items-center gap-3 px-4 py-3"
                 >
-                  <span className="t-mono w-16 shrink-0 text-ink40">{clock(new Date(b.startAt))}</span>
+                  <span className="t-num w-16 shrink-0 text-ink40">{clock(new Date(b.startAt))}</span>
                   <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-ink70">
                     {b.title}
                   </span>
-                  <span className="badge-outline shrink-0">sibuk</span>
+                  <span className="chip shrink-0">sibuk</span>
                 </motion.li>
               ))}
 
@@ -153,7 +153,7 @@ export function CalendarView({
                       size={20}
                     />
                     {!task.allDay && task.dueAt && (
-                      <span className="t-mono w-16 shrink-0 text-ink40">
+                      <span className="t-num w-16 shrink-0 text-ink40">
                         {clock(new Date(task.dueAt))}
                       </span>
                     )}
@@ -167,7 +167,7 @@ export function CalendarView({
                     {task.priority <= 2 && (
                       <span
                         className={
-                          task.priority === 1 ? "badge-solid !bg-accent shrink-0" : "badge-outline shrink-0"
+                          task.priority === 1 ? "chip-active !bg-accent shrink-0" : "chip shrink-0"
                         }
                       >
                         P{task.priority}
@@ -199,7 +199,7 @@ function NavButton({
       whileTap={press}
       onClick={onClick}
       aria-label={label}
-      className="grid h-10 w-10 place-items-center rounded-full border-2 border-ink text-[18px] font-bold text-ink transition-colors duration-[--dur-fast] hover:bg-surface"
+      className="icon-btn-paper h-11 w-11 text-[18px] font-bold"
     >
       {children}
     </motion.button>

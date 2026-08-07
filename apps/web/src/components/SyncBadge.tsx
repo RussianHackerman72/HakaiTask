@@ -18,7 +18,7 @@ export function SyncBadge() {
   const online = useKaiStore((s) => s.online);
 
   if (!supabaseConfigured) {
-    return <span className="t-mono text-ink40">lokal</span>;
+    return <span className="t-num text-ink40">lokal</span>;
   }
 
   const { status, count } = syncIndicator(outbox, online);
@@ -26,7 +26,7 @@ export function SyncBadge() {
 
   return (
     <span
-      className="t-mono inline-flex items-center gap-1.5 text-ink40"
+      className="t-num inline-flex items-center gap-1.5 text-ink40"
       title={count > 0 ? `${count} perubahan menunggu` : undefined}
     >
       <span

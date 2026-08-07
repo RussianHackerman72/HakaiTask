@@ -144,7 +144,7 @@ export function CommandPalette({
               spellCheck={false}
             />
 
-            <ul className="max-h-[45vh] overflow-y-auto border-t-2 border-ink">
+            <ul className="max-h-[45vh] overflow-y-auto border-t border-line">
               {items.length === 0 && (
                 <li className="px-5 py-4 text-[15px] text-ink40">Gak ada yang cocok.</li>
               )}
@@ -155,11 +155,11 @@ export function CommandPalette({
                     onMouseEnter={() => setActive(i)}
                     onClick={item.run}
                     className={`flex w-full items-center justify-between gap-4 px-5 py-3 text-left text-[15px] transition-colors duration-[--dur-fast] ${
-                      i === clamped ? "bg-surface text-ink" : "text-ink70"
+                      i === clamped ? "bg-subtle text-ink" : "text-ink70"
                     }`}
                   >
                     <span className="min-w-0 truncate">{item.label}</span>
-                    {item.hint && <span className="t-mono shrink-0 text-ink40">{item.hint}</span>}
+                    {item.hint && <span className="t-num shrink-0 text-ink40">{item.hint}</span>}
                   </button>
                 </li>
               ))}

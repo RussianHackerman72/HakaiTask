@@ -44,7 +44,7 @@ export function DashboardQuickAdd({
   return (
     <motion.div variants={rise} initial="hidden" animate="show" className="card">
       <div className="flex items-center gap-3 px-5 py-4">
-        <span aria-hidden className="t-mono text-ink40">
+        <span aria-hidden className="t-num text-ink40">
           +
         </span>
         <input
@@ -83,7 +83,7 @@ export function DashboardQuickAdd({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t-2 border-ink"
+            className="overflow-hidden border-t border-line"
           >
             <div className="px-5 py-4">
               {parsed ? (

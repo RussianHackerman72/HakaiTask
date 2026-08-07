@@ -54,7 +54,7 @@ export function DetailSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Detail ${task.title}`}
-            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[--radius-lg] border-t-2 border-ink bg-paper"
+            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[--radius-lg] bg-surface"
           >
             <div className="mx-auto w-full max-w-[--max-content] px-6 pb-10 pt-4">
               <div
@@ -116,7 +116,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
       </div>
 
       {meta && (
-        <p className={`t-mono mt-2 pl-[38px] ${overdue ? "text-accent" : "text-ink40"}`}>
+        <p className={`t-num mt-2 pl-[38px] ${overdue ? "text-accent" : "text-ink40"}`}>
           {overdue ? `Lewat · ${meta}` : meta}
         </p>
       )}
@@ -133,9 +133,9 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
               className={
                 task.priority === p
                   ? p === 1
-                    ? "badge-solid !bg-accent"
-                    : "badge-solid"
-                  : "badge-outline text-ink40 hover:text-ink"
+                    ? "chip-active !bg-accent"
+                    : "chip-active"
+                  : "chip text-ink40 hover:text-ink"
               }
             >
               P{p}
@@ -155,13 +155,13 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
                 snoozeTask(task, at);
                 onClose();
               }}
-              className="badge-outline text-ink70 hover:text-ink"
+              className="chip text-ink70 hover:text-ink"
             >
               {label}
             </motion.button>
           ))}
           {task.rescheduleCount > 0 && (
-            <span className="t-mono self-center text-ink40">
+            <span className="t-num self-center text-ink40">
               udah digeser {task.rescheduleCount}×
             </span>
           )}
@@ -223,7 +223,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
         />
       </Section>
 
-      <div className="mt-8 flex flex-wrap items-center gap-4 border-t-2 border-ink pt-4">
+      <div className="mt-8 flex flex-wrap items-center gap-4 border-t border-line pt-4">
         {task.status !== "doing" && !done && (
           <Action onClick={() => startTask(task)}>Mulai kerjain</Action>
         )}
@@ -252,7 +252,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <section className="mt-8">
-      <h3 className="t-meta mb-3 text-ink40">{label}</h3>
+      <h3 className="mb-3 text-[15px] font-bold text-ink">{label}</h3>
       {children}
     </section>
   );
@@ -272,7 +272,7 @@ function Action({
       type="button"
       whileTap={press}
       onClick={onClick}
-      className={`t-mono transition-colors duration-[--dur-fast] ${
+      className={`t-num transition-colors duration-[--dur-fast] ${
         accent ? "text-ink40 hover:text-accent" : "text-ink40 hover:text-ink"
       }`}
     >

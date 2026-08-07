@@ -115,7 +115,7 @@ export function SignIn() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email kamu"
-              className="w-full rounded-[--radius-md] border-2 border-ink bg-transparent px-4 py-3 text-[16px] font-medium text-ink outline-none placeholder:text-ink40"
+              className="w-full rounded-full bg-surface px-5 py-3.5 text-[16px] font-medium text-ink outline-none placeholder:text-ink40"
             />
             <motion.button
               type="submit"
@@ -131,7 +131,7 @@ export function SignIn() {
             type="button"
             whileTap={press}
             onClick={() => void google()}
-            className="btn-pill-outline mt-3 w-full"
+            className="btn-pill-soft mt-3 w-full"
           >
             Lanjut dengan Google
           </motion.button>

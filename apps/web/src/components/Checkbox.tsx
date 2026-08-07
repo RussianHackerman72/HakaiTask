@@ -28,7 +28,7 @@ export function Checkbox({
         e.stopPropagation();
         onChange();
       }}
-      className="grid shrink-0 place-items-center rounded-full border-2 border-ink transition-colors duration-[--dur-fast]"
+      className="grid shrink-0 place-items-center rounded-full border-2 border-ink40 transition-colors duration-[--dur-fast] hover:border-ink"
       style={{ width: size, height: size }}
     >
       <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 12 12" fill="none">

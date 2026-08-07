@@ -81,7 +81,7 @@ export function QuickAdd({
               spellCheck={false}
             />
 
-            <div className="border-t-2 border-ink px-5 py-4">
+            <div className="border-t border-line px-5 py-4">
               {parsed ? (
                 <QuickAddPreview parsed={parsed} value={value} now={now} />
               ) : (
@@ -89,8 +89,8 @@ export function QuickAdd({
               )}
             </div>
 
-            <div className="flex items-center justify-between border-t-2 border-ink px-5 py-3">
-              <span className="t-mono text-ink40">Enter buat simpan · Esc buat batal</span>
+            <div className="flex items-center justify-between border-t border-line px-5 py-3">
+              <span className="t-num text-ink40">Enter buat simpan · Esc buat batal</span>
               <motion.button
                 type="button"
                 whileTap={press}
