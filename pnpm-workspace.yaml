@@ -1,0 +1,6 @@
+packages:
+  - "packages/*"
+  - "apps/*"
+allowBuilds:
+  # esbuild dipakai vitest buat transpile TS — perlu build script native.
+  esbuild: true
