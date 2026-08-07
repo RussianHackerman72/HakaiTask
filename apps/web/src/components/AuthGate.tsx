@@ -96,13 +96,13 @@ export function SignIn() {
       className="mx-auto flex min-h-dvh w-full max-w-[--max-content] flex-col justify-center px-6"
     >
       <h1 className="t-display text-ink">HaKaiTask</h1>
-      <p className="mt-3 text-[16px] leading-6 text-ink70">
+      <p className="mt-3 text-[16px] font-medium leading-6 text-ink70">
         Masuk buat nyimpen task kamu lintas perangkat. Datanya tetap ada di HP dan
         laptop walau lagi offline.
       </p>
 
       {sent ? (
-        <p className="mt-8 text-[15px] text-ink">
+        <p className="mt-8 text-[15px] font-medium text-ink">
           Link masuk udah dikirim ke <span className="text-ink70">{email}</span>. Cek
           email kamu.
         </p>
@@ -115,13 +115,13 @@ export function SignIn() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="email kamu"
-              className="w-full rounded-[--radius-sm] border border-line bg-transparent px-4 py-3 text-[16px] text-ink outline-none placeholder:text-ink40"
+              className="w-full rounded-[--radius-md] border-2 border-ink bg-transparent px-4 py-3 text-[16px] font-medium text-ink outline-none placeholder:text-ink40"
             />
             <motion.button
               type="submit"
               whileTap={press}
               disabled={busy}
-              className="t-meta mt-3 w-full rounded-[--radius-sm] border border-ink px-4 py-3 text-ink transition-colors duration-[--dur-fast] hover:bg-surface disabled:opacity-40"
+              className="btn-pill mt-3 w-full disabled:opacity-40"
             >
               {busy ? "Mengirim…" : "Kirim link masuk"}
             </motion.button>
@@ -131,7 +131,7 @@ export function SignIn() {
             type="button"
             whileTap={press}
             onClick={() => void google()}
-            className="t-meta mt-3 w-full rounded-[--radius-sm] border border-line px-4 py-3 text-ink70 transition-colors duration-[--dur-fast] hover:text-ink"
+            className="btn-pill-outline mt-3 w-full"
           >
             Lanjut dengan Google
           </motion.button>

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { buildGreeting, type Task } from "@hakaitask/core";
 import { useKaiStore } from "@hakaitask/core/store";
 import { SignIn, useAuth } from "./components/AuthGate.js";
+import { CalendarView } from "./components/CalendarView.js";
 import { CommandPalette, type Command } from "./components/CommandPalette.js";
+import { DashboardQuickAdd } from "./components/DashboardQuickAdd.js";
 import { DetailSheet } from "./components/DetailSheet.js";
 import { EmptyState } from "./components/EmptyState.js";
 import { Fab } from "./components/Fab.js";
@@ -12,6 +15,8 @@ import { Header } from "./components/Header.js";
 import { QuickAdd } from "./components/QuickAdd.js";
 import { buildEntries, UpcomingList } from "./components/UpcomingList.js";
 import { useLenis, useNow } from "./lib/hooks.js";
+import { fade } from "./lib/motion.js";
+import type { Page } from "./lib/pages.js";
 import { useTheme } from "./lib/theme.js";
 import { startSync } from "./lib/sync.js";
 import { useBusyBlocks, useFocus, useTasks } from "./lib/tasks.js";
@@ -54,6 +59,7 @@ function Dashboard({
   const blocks = useBusyBlocks();
   const focus = useFocus(now);
 
+  const [page, setPage] = useState<Page>("dashboard");
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState<{ open: boolean; initial: string }>({
     open: false,
@@ -110,10 +116,15 @@ function Dashboard({
   const commands = useMemo<Command[]>(
     () => [
       { id: "add", label: "Tambah task", hint: "n", run: () => openQuickAdd() },
+      {
+        id: "nav",
+        label: page === "dashboard" ? "Buka kalender" : "Buka dashboard",
+        run: () => setPage((p) => (p === "dashboard" ? "calendar" : "dashboard")),
+      },
       { id: "theme", label: "Ganti mode terang/gelap", run: toggleTheme },
       ...(onSignOut ? [{ id: "signout", label: "Keluar", run: onSignOut }] : []),
     ],
-    [openQuickAdd, toggleTheme, onSignOut],
+    [openQuickAdd, toggleTheme, onSignOut, page],
   );
 
   // Sebelum store selesai rehydrate, jangan render apa pun: kalau dirender
@@ -123,29 +134,52 @@ function Dashboard({
   return (
     <div className="min-h-dvh bg-paper">
       <main className="mx-auto w-full max-w-[--max-content] px-6 pb-32 pt-8">
-        <Header now={now} {...(onSignOut ? { onSignOut } : {})} />
+        <Header
+          now={now}
+          page={page}
+          onNavigate={setPage}
+          {...(onSignOut ? { onSignOut } : {})}
+        />
 
-        <div className="mt-10">
-          <Greeting salam={greeting.salam} baris2={greeting.baris2} />
-        </div>
+        <AnimatePresence mode="wait">
+          {page === "dashboard" ? (
+            <motion.div key="dashboard" variants={fade} initial="hidden" animate="show" exit="exit">
+              <div className="mt-10">
+                <Greeting salam={greeting.salam} baris2={greeting.baris2} />
+              </div>
 
-        <div className="mt-8 space-y-10">
-          {focus.focus ? (
-            <FocusCard
-              task={focus.focus}
-              now={now}
-              onOpen={() => setOpenTaskId(focus.focus!.id)}
-            />
+              <div className="mt-8 space-y-6">
+                <DashboardQuickAdd now={now} userId={userId} />
+
+                {focus.focus ? (
+                  <FocusCard
+                    task={focus.focus}
+                    now={now}
+                    onOpen={() => setOpenTaskId(focus.focus!.id)}
+                  />
+                ) : (
+                  <EmptyState onAdd={() => openQuickAdd()} />
+                )}
+
+                <UpcomingList
+                  entries={entries}
+                  now={now}
+                  onOpen={(task) => setOpenTaskId(task.id)}
+                />
+              </div>
+            </motion.div>
           ) : (
-            <EmptyState onAdd={() => openQuickAdd()} />
+            <motion.div key="calendar" variants={fade} initial="hidden" animate="show" exit="exit" className="mt-10">
+              <CalendarView
+                now={now}
+                tasks={tasks}
+                blocks={blocks}
+                userId={userId}
+                onOpenTask={(task) => setOpenTaskId(task.id)}
+              />
+            </motion.div>
           )}
-
-          <UpcomingList
-            entries={entries}
-            now={now}
-            onOpen={(task) => setOpenTaskId(task.id)}
-          />
-        </div>
+        </AnimatePresence>
       </main>
 
       <Fab onClick={() => openQuickAdd()} />

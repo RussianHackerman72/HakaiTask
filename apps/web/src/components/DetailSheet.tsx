@@ -54,7 +54,7 @@ export function DetailSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Detail ${task.title}`}
-            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[--radius-lg] border-t border-line bg-paper"
+            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[--radius-lg] border-t-2 border-ink bg-paper"
           >
             <div className="mx-auto w-full max-w-[--max-content] px-6 pb-10 pt-4">
               <div
@@ -130,13 +130,13 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
               whileTap={press}
               onClick={() => patchTask(task.id, { priority: p })}
               aria-pressed={task.priority === p}
-              className={`t-mono rounded-[--radius-sm] border px-3 py-1.5 transition-colors duration-[--dur-fast] ${
+              className={
                 task.priority === p
                   ? p === 1
-                    ? "border-accent text-accent"
-                    : "border-ink text-ink"
-                  : "border-line text-ink40 hover:text-ink70"
-              }`}
+                    ? "badge-solid !bg-accent"
+                    : "badge-solid"
+                  : "badge-outline text-ink40 hover:text-ink"
+              }
             >
               P{p}
             </motion.button>
@@ -155,7 +155,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
                 snoozeTask(task, at);
                 onClose();
               }}
-              className="t-mono rounded-[--radius-sm] border border-line px-3 py-1.5 text-ink70 transition-colors duration-[--dur-fast] hover:text-ink"
+              className="badge-outline text-ink70 hover:text-ink"
             >
               {label}
             </motion.button>
@@ -223,7 +223,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
         />
       </Section>
 
-      <div className="mt-8 flex flex-wrap items-center gap-4 border-t border-line pt-4">
+      <div className="mt-8 flex flex-wrap items-center gap-4 border-t-2 border-ink pt-4">
         {task.status !== "doing" && !done && (
           <Action onClick={() => startTask(task)}>Mulai kerjain</Action>
         )}

@@ -32,7 +32,7 @@ export function Greeting({ salam, baris2 }: { salam: string; baris2: string }) {
       <h1 className="t-display text-ink">
         <SplitWords text={salam} />
       </h1>
-      <p className="mt-2 text-[16px] leading-6 text-ink70">
+      <p className="mt-2 text-[17px] font-medium leading-6 text-ink70">
         <SplitWords text={baris2} delay={0.12} />
       </p>
     </div>

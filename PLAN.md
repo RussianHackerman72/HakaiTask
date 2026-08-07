@@ -3,7 +3,10 @@
 Personal to-do list untuk web + Android (APK).
 Dokumen ini acuan tunggal sebelum & selama development.
 
-- **Status:** Fase 1 selesai — MVP web jalan di `apps/web`, 49 test lolos
+- **Status:** Fase 1 selesai — MVP web jalan di `apps/web`, 49 test lolos. Desain
+  direvisi ke "bold minimalism" (§7) dan halaman kalender ringan (lihat task per
+  tanggal) ditarik maju dari Fase 4 — bukan time-blocking penuh, cuma view + quick-add
+  per tanggal.
 - **Terakhir diperbarui:** 7 Agustus 2026
 - **Pemilik:** Kai
 
@@ -1198,35 +1201,37 @@ Pakai `rrule` (npm) — kecil, dipakai di mana-mana, jalan di RN.
 
 ## 7. Design System
 
-### 7.1 Warna
+**Revisi 7 Agustus 2026:** gaya diganti dari minimalis serif tipis ke **"bold minimalism"** —
+kertas krem, kartu putih, garis TEBAL hitam (2px), tipografi sans ekstra-tebal, aksi utama
+jadi pil hitam solid. Token lama (serif display, border 1px) udah gak dipakai lagi.
 
-Jangan pure hitam/putih — terlalu keras di mata.
+### 7.1 Warna
 
 ```
                 LIGHT       DARK
-ink             #0A0A0A     #FAFAFA     teks utama
-ink-70          #525252     #A3A3A3     teks sekunder
-ink-40          #A3A3A3     #6B6B6B     teks tersier / meta
-line            #E5E5E5     #262626     border, divider
-surface         #F4F4F4     #171717     card, elevated
-paper           #FAFAFA     #0A0A0A     background
+ink             #111113     #F5F5F2     teks utama, garis kartu
+ink-70          #48484D     #B8B8B4     teks sekunder
+ink-40          #8C8C92     #7A7A7E     teks tersier / meta
+line            #111113     #F5F5F2     sama kayak ink — garisnya emang tebal & gelap
+surface         #FFFFFF     #1B1B1D     kartu, elevated
+paper           #F2F0EA     #101012     background (krem, bukan putih polos)
 accent          #DC2626     #EF4444     HANYA overdue & P1
 ```
 
-**Aturan:** `accent` cuma boleh dipakai buat overdue dan P1. Selain itu semua hirarki dibangun dari **ukuran, berat font, dan jarak**. Ini yang bikin minimalis kelihatan mahal, bukan murah.
+**Aturan:** `accent` cuma boleh dipakai buat overdue dan P1. Selain itu semua hirarki dibangun dari **ukuran, berat font, dan jarak** — plus sekarang garis tebal & badge pil solid. Ini yang bikin minimalis kelihatan mahal, bukan murah.
 
 ### 7.2 Tipografi
 
 | Peran | Font | Ukuran / Berat |
 |---|---|---|
-| Display (sapaan) | **Instrument Serif** | 40–52px / 400, tracking −0.02em |
-| Heading | **Geist** | 20–28px / 600 |
-| Body & UI | **Geist** | 15–16px / 400–500 |
-| Meta / label | **Geist** | 12–13px / 500, tracking +0.04em, UPPERCASE |
-| Angka & waktu | **Geist Mono** | 12–14px / 400, `tabular-nums` |
+| Display (sapaan) | **Geist** | 40–44px / 800, tracking −0.02em — bukan serif lagi |
+| Heading | **Geist** | 20–28px / 700–800 |
+| Body & UI | **Geist** | 15–16px / 500 |
+| Meta / label | **Geist** | 12–13px / 700, tracking +0.03em, UPPERCASE |
+| Angka & waktu | **Geist Mono** | 12–14px / 500, `tabular-nums` |
 
-Alternatif serif: **Newsreader**. Alternatif sans: **Inter Tight**.
-Semua tersedia di Google Fonts / Fontsource → jalan di web maupun Expo (`expo-font`).
+Alternatif sans: **Inter Tight**. Semua tersedia di Google Fonts / Fontsource →
+jalan di web maupun Expo (`expo-font`).
 
 ### 7.3 Spacing & bentuk
 

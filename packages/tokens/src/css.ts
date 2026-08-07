@@ -37,6 +37,7 @@ ${typeVars}
   --radius-sm: ${radius.sm}px;
   --radius-md: ${radius.md}px;
   --radius-lg: ${radius.lg}px;
+  --radius-full: ${radius.full}px;
 
   --max-content: ${layout.maxContentWidth}px;
   --border-width: ${layout.borderWidth}px;

@@ -8,17 +8,17 @@ export function EmptyState({ onAdd }: { onAdd: () => void }) {
       variants={rise}
       initial="hidden"
       animate="show"
-      className="rounded-[--radius-md] border border-line bg-surface p-6"
+      className="card p-6"
     >
-      <p className="shiny text-[20px] font-semibold leading-7">Kosong. Nikmatin dulu.</p>
-      <p className="mt-2 text-[15px] leading-6 text-ink70">
+      <p className="shiny text-[22px] font-extrabold leading-7">Kosong. Nikmatin dulu.</p>
+      <p className="mt-2 text-[15px] font-medium leading-6 text-ink70">
         Kalau ada yang kepikiran, tulis aja apa adanya — “bsk jam 2 rapat klien”.
       </p>
       <motion.button
         type="button"
         whileTap={press}
         onClick={onAdd}
-        className="t-meta mt-5 rounded-[--radius-sm] border border-line px-3 py-1.5 text-ink transition-colors duration-[--dur-fast] hover:bg-paper"
+        className="btn-pill mt-5"
       >
         Tambah task
       </motion.button>

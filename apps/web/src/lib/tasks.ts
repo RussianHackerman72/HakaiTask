@@ -62,8 +62,11 @@ export function createFromParse(parsed: ParseResult, userId: string): string {
   const store = useKaiStore.getState();
   const id = newId();
 
-  if (parsed.kind === "busy" && parsed.startAt) {
-    const start = parsed.startAt;
+  // Parser nulis jam tunggal ("jam 3") ke dueAt, cuma rentang eksplisit
+  // ("jam 3-4") yang kepisah startAt/endAt — jadi anchor busy block ambil
+  // yang mana aja yang keisi (§6.1.6).
+  if (parsed.kind === "busy" && (parsed.startAt ?? parsed.dueAt)) {
+    const start = parsed.startAt ?? parsed.dueAt!;
     const end = parsed.endAt ?? new Date(start.getTime() + (parsed.estimateMin ?? 60) * 60_000);
     store.upsertBusyBlock({
       id,

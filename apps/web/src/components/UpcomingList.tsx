@@ -54,7 +54,7 @@ export function UpcomingList({
         variants={listContainer}
         initial="hidden"
         animate="show"
-        className="mt-3 border-t border-line"
+        className="mt-3 border-t-2 border-ink"
       >
         <AnimatePresence initial={false}>
           {entries.map((entry) =>
@@ -115,7 +115,7 @@ function TaskRow({ task, now, onOpen }: { task: Task; now: Date; onOpen: () => v
       </button>
 
       {task.priority <= 2 && (
-        <span className={`t-mono shrink-0 ${task.priority === 1 ? "text-accent" : "text-ink40"}`}>
+        <span className={task.priority === 1 ? "badge-solid !bg-accent shrink-0" : "badge-outline shrink-0"}>
           P{task.priority}
         </span>
       )}

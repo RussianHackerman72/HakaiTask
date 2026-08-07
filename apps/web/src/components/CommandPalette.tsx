@@ -117,7 +117,7 @@ export function CommandPalette({
             role="dialog"
             aria-modal="true"
             aria-label="Command palette"
-            className="w-full max-w-[--max-content] overflow-hidden rounded-[--radius-md] border border-line bg-paper"
+            className="card w-full max-w-[--max-content] overflow-hidden"
           >
             <input
               ref={inputRef}
@@ -144,7 +144,7 @@ export function CommandPalette({
               spellCheck={false}
             />
 
-            <ul className="max-h-[45vh] overflow-y-auto border-t border-line">
+            <ul className="max-h-[45vh] overflow-y-auto border-t-2 border-ink">
               {items.length === 0 && (
                 <li className="px-5 py-4 text-[15px] text-ink40">Gak ada yang cocok.</li>
               )}

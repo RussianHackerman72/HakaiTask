@@ -1,28 +1,30 @@
 /**
  * Design token HaKaiTask — PLAN.md §7
  *
+ * Gaya "bold minimalism": kertas krem, kartu putih, garis TEBAL hitam,
+ * tipografi sans tebal (bukan serif), aksi utama jadi pil hitam solid.
  * Satu sumber kebenaran buat web (CSS variables) dan mobile (JS object).
  * Aturan keras: `accent` HANYA dipakai buat overdue & P1. Semua hirarki lain
- * dibangun dari ukuran, berat font, dan jarak.
+ * dibangun dari ukuran, berat font, dan jarak — bukan warna tambahan.
  */
 
 export const color = {
   light: {
-    ink: "#0A0A0A",
-    ink70: "#525252",
-    ink40: "#A3A3A3",
-    line: "#E5E5E5",
-    surface: "#F4F4F4",
-    paper: "#FAFAFA",
+    ink: "#111113",
+    ink70: "#48484D",
+    ink40: "#8C8C92",
+    line: "#111113",
+    surface: "#FFFFFF",
+    paper: "#F2F0EA",
     accent: "#DC2626",
   },
   dark: {
-    ink: "#FAFAFA",
-    ink70: "#A3A3A3",
-    ink40: "#6B6B6B",
-    line: "#262626",
-    surface: "#171717",
-    paper: "#0A0A0A",
+    ink: "#F5F5F2",
+    ink70: "#B8B8B4",
+    ink40: "#7A7A7E",
+    line: "#F5F5F2",
+    surface: "#1B1B1D",
+    paper: "#101012",
     accent: "#EF4444",
   },
 } as const;
@@ -43,32 +45,34 @@ export function heatmapLevel(count: number): 0 | 1 | 2 | 3 | 4 {
 }
 
 export const font = {
-  display: "'Instrument Serif', Georgia, serif",
+  /** Bold minimalism gak pakai serif — display sama sans, dibedain lewat berat & ukuran. */
+  display: "'Geist', 'Inter Tight', system-ui, sans-serif",
   sans: "'Geist', 'Inter Tight', system-ui, sans-serif",
   mono: "'Geist Mono', 'JetBrains Mono', ui-monospace, monospace",
 } as const;
 
 /** Skala tipografi — [ukuran px, tinggi baris px, berat, tracking em] */
 export const type = {
-  display: { size: 48, leading: 52, weight: 400, tracking: -0.02, family: font.display },
-  h1: { size: 28, leading: 34, weight: 600, tracking: -0.01, family: font.sans },
-  h2: { size: 20, leading: 26, weight: 600, tracking: 0, family: font.sans },
-  body: { size: 16, leading: 24, weight: 400, tracking: 0, family: font.sans },
-  bodySm: { size: 15, leading: 22, weight: 400, tracking: 0, family: font.sans },
-  meta: { size: 12, leading: 16, weight: 500, tracking: 0.04, family: font.sans },
-  mono: { size: 13, leading: 18, weight: 400, tracking: 0, family: font.mono },
+  display: { size: 44, leading: 46, weight: 800, tracking: -0.02, family: font.display },
+  h1: { size: 28, leading: 32, weight: 800, tracking: -0.01, family: font.sans },
+  h2: { size: 20, leading: 25, weight: 700, tracking: 0, family: font.sans },
+  body: { size: 16, leading: 24, weight: 500, tracking: 0, family: font.sans },
+  bodySm: { size: 15, leading: 22, weight: 500, tracking: 0, family: font.sans },
+  meta: { size: 12, leading: 16, weight: 700, tracking: 0.03, family: font.sans },
+  mono: { size: 13, leading: 18, weight: 500, tracking: 0, family: font.mono },
 } as const;
 
 export type TypeName = keyof typeof type;
 
 export const space = [4, 8, 12, 16, 24, 32, 48, 64, 96] as const;
 
-export const radius = { sm: 8, md: 14, lg: 24, full: 9999 } as const;
+export const radius = { sm: 12, md: 24, lg: 32, full: 9999 } as const;
 
 export const layout = {
   /** Lebar konten maksimum di web — sengaja sempit biar fokus. */
   maxContentWidth: 640,
-  borderWidth: 1,
+  /** Garis tebal ala bold-minimalism — dipakai lewat class border-2/border-3, bukan var CSS ini. */
+  borderWidth: 2,
 } as const;
 
 export const motion = {

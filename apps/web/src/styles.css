@@ -1,11 +1,13 @@
 @import "tailwindcss";
 @import "./tokens.generated.css";
 
-@import "@fontsource/instrument-serif/400.css";
 @import "@fontsource/geist-sans/400.css";
 @import "@fontsource/geist-sans/500.css";
 @import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-sans/700.css";
+@import "@fontsource/geist-sans/800.css";
 @import "@fontsource/geist-mono/400.css";
+@import "@fontsource/geist-mono/500.css";
 
 /* Jembatan token → utility Tailwind. Nilai aslinya tetap dari packages/tokens. */
 @theme inline {
@@ -24,6 +26,7 @@
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
+  --radius-full: var(--radius-full);
 }
 
 @layer base {
@@ -81,5 +84,99 @@
     font-size: var(--t-mono-size);
     line-height: var(--t-mono-leading);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Kartu ala bold-minimalism: garis tebal hitam, tanpa shadow. */
+  .card {
+    border-width: 2px;
+    border-color: var(--c-ink);
+    background: var(--c-surface);
+    border-radius: var(--radius-md);
+  }
+
+  /* Pil aksi utama — hitam solid, teks krem. */
+  .btn-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--c-ink);
+    color: var(--c-paper);
+    font-weight: 700;
+    padding: 12px 22px;
+    white-space: nowrap;
+  }
+
+  .btn-pill-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--radius-full, 9999px);
+    border-width: 2px;
+    border-color: var(--c-ink);
+    color: var(--c-ink);
+    font-weight: 700;
+    padding: 10px 20px;
+    white-space: nowrap;
+  }
+
+  /* Badge bulat kecil — dipakai buat prioritas, tag, filter chip. */
+  .badge-solid {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    background: var(--c-ink);
+    color: var(--c-paper);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 14px;
+    white-space: nowrap;
+  }
+
+  .badge-outline {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border-width: 2px;
+    border-color: var(--c-ink);
+    color: var(--c-ink);
+    font-weight: 700;
+    font-size: 13px;
+    padding: 5px 13px;
+    white-space: nowrap;
+  }
+
+  /* Toggle switch iOS-style — dipakai buat setting boolean (§7 bold-minimalism). */
+  .switch-track {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    width: 46px;
+    height: 27px;
+    border-radius: 9999px;
+    border-width: 2px;
+    border-color: var(--c-ink);
+    background: var(--c-paper);
+    transition: background-color 160ms;
+    flex-shrink: 0;
+  }
+  .switch-track[data-on="true"] {
+    background: var(--c-ink);
+  }
+  .switch-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 19px;
+    height: 19px;
+    border-radius: 9999px;
+    background: var(--c-ink);
+    transition: transform 160ms;
+  }
+  .switch-track[data-on="true"] .switch-thumb {
+    background: var(--c-paper);
+    transform: translateX(19px);
   }
 }
