@@ -75,7 +75,7 @@ export function QuickAdd({
                   submit();
                 }
               }}
-              placeholder="Tulis apa aja — “bsk jam 2 rapat klien”"
+              placeholder="Tulis apa aja"
               aria-label="Tulis task baru"
               className="w-full bg-transparent px-5 py-5 text-[20px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-ink40"
               autoComplete="off"

@@ -8,7 +8,6 @@ import { CommandPalette, type Command } from "./components/CommandPalette.js";
 import { DashboardQuickAdd } from "./components/DashboardQuickAdd.js";
 import { DetailSheet } from "./components/DetailSheet.js";
 import { EmptyState } from "./components/EmptyState.js";
-import { Fab } from "./components/Fab.js";
 import { FocusCard } from "./components/FocusCard.js";
 import { Greeting } from "./components/Greeting.js";
 import { Header } from "./components/Header.js";
@@ -217,14 +216,6 @@ function Dashboard({
           )}
         </AnimatePresence>
       </main>
-
-      {/*
-        FAB cuma di dashboard. Di kalender dia nutupin sel tanggal (fixed ke
-        viewport, jadi ngambang di atas grid) DAN ambigu — mau nambah ke hari
-        ini atau ke tanggal yang lagi dipilih? Halaman itu udah punya composer
-        sendiri yang jelas nempel ke tanggal terpilih.
-      */}
-      {page === "dashboard" && <Fab onClick={() => openQuickAdd()} />}
 
       <DetailSheet task={openTask} now={now} onClose={() => setOpenTaskId(null)} />
 

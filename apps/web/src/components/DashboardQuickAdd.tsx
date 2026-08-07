@@ -60,7 +60,7 @@ export function DashboardQuickAdd({
               submit();
             }
           }}
-          placeholder={placeholder ?? "Tulis task apa aja — “bsk jam 2 rapat klien”"}
+          placeholder={placeholder ?? "Tulis task apa aja"}
           // Placeholder ilang begitu user ngetik, jadi dia gak cukup jadi label.
           aria-label={placeholder ?? "Tulis task baru"}
           className="w-full bg-transparent py-4 text-[16px] font-semibold text-ink outline-none placeholder:font-medium placeholder:text-ink40"

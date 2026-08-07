@@ -30,7 +30,7 @@ export function EmptyState({
       <p className="mt-2 text-[15px] font-medium leading-6 text-ink70">
         {allDone
           ? `${doneToday} task kelar hari ini. Sisanya buat besok.`
-          : "Kalau ada yang kepikiran, tulis aja apa adanya — “bsk jam 2 rapat klien”."}
+          : "Kalau ada yang kepikiran, tulis aja apa adanya."}
       </p>
       <motion.button type="button" whileTap={press} onClick={onAdd} className="btn-pill mt-5">
         {allDone ? "Tambah satu lagi" : "Tambah task"}

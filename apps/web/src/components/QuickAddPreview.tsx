@@ -5,7 +5,7 @@ import { normalTransition } from "../lib/motion.js";
 
 export const QUICK_ADD_CONTOH = [
   "ingetin gw bsk jam 2 ada rapat sama klien",
-  "revisi video vlog !p1 besok 90m #konten",
+  "revisi video vlog penting besok jam 2 siang",
   "tiap senin jam 8 standup",
 ];
 

@@ -39,9 +39,9 @@ export function CalendarView({
 
   return (
     <motion.div variants={rise} initial="hidden" animate="show" className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="t-display text-[32px] leading-9 text-ink">{monthLabel(viewMonth)}</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="t-display min-w-0 text-[32px] leading-9 text-ink">{monthLabel(viewMonth)}</h1>
+        <div className="flex shrink-0 items-center gap-2">
           <NavButton label="Bulan sebelumnya" onClick={() => setViewMonth((m) => addMonths(m, -1))}>
             ‹
           </NavButton>
@@ -128,7 +128,7 @@ export function CalendarView({
           now={now}
           userId={userId}
           forcedDate={selected}
-          placeholder={`Tambah task buat ${headerDate(selected)}…`}
+          placeholder="Tambah task"
         />
 
         {selectedTasks.length === 0 && selectedBlocks.length === 0 ? (
