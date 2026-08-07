@@ -57,6 +57,13 @@ export function fail(state: OutboxState, mutationId: string): OutboxState {
   return { queue, deadLetter };
 }
 
+/** Antre ulang semua mutasi di dead-letter — dipakai saat user minta coba lagi. */
+export function retryDeadLetter(state: OutboxState): OutboxState {
+  if (state.deadLetter.length === 0) return state;
+  const retried = state.deadLetter.map((m) => ({ ...m, attempts: 0 }));
+  return { queue: [...state.queue, ...retried], deadLetter: [] };
+}
+
 /** Backoff eksponensial 1s → 60s. */
 export function backoffMs(attempts: number): number {
   return Math.min(1000 * 2 ** attempts, 60_000);

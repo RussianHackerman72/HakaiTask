@@ -15,6 +15,7 @@ import {
   fail,
   lockedFieldsFor,
   mergeLWW,
+  retryDeadLetter,
   type Mutation,
   type OutboxState,
 } from "../sync/index.js";
@@ -41,6 +42,7 @@ export interface KaiState {
   setOnline: (online: boolean) => void;
   ackMutation: (id: string) => void;
   failMutation: (id: string) => void;
+  retryDeadLetter: () => void;
   energyMode: () => Energy | "auto";
 }
 
@@ -206,6 +208,7 @@ export const useKaiStore = create<KaiState>()(
       setOnline: (online) => set({ online }),
       ackMutation: (id) => set((s) => ({ outbox: ack(s.outbox, id) })),
       failMutation: (id) => set((s) => ({ outbox: fail(s.outbox, id) })),
+      retryDeadLetter: () => set((s) => ({ outbox: retryDeadLetter(s.outbox) })),
       energyMode: () => get().settings?.energyMode ?? DEFAULT_SETTINGS.energyMode,
     }),
     {
