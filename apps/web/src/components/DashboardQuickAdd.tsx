@@ -43,7 +43,9 @@ export function DashboardQuickAdd({
 
   return (
     <motion.div variants={rise} initial="hidden" animate="show" className="card">
-      <div className="flex items-center gap-3 px-5 py-4">
+      {/* Padding vertikal ditaruh di input-nya, bukan di baris ini — biar
+          seluruh tinggi baris jadi area klik yang beneran nge-fokusin input. */}
+      <div className="flex items-center gap-3 px-5">
         <span aria-hidden className="t-num text-ink40">
           +
         </span>
@@ -59,7 +61,9 @@ export function DashboardQuickAdd({
             }
           }}
           placeholder={placeholder ?? "Tulis task apa aja — “bsk jam 2 rapat klien”"}
-          className="w-full bg-transparent text-[16px] font-semibold text-ink outline-none placeholder:font-medium placeholder:text-ink40"
+          // Placeholder ilang begitu user ngetik, jadi dia gak cukup jadi label.
+          aria-label={placeholder ?? "Tulis task baru"}
+          className="w-full bg-transparent py-4 text-[16px] font-semibold text-ink outline-none placeholder:font-medium placeholder:text-ink40"
           autoComplete="off"
           spellCheck={false}
         />

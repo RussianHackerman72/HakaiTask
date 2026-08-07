@@ -117,7 +117,7 @@ export function CommandPalette({
             role="dialog"
             aria-modal="true"
             aria-label="Command palette"
-            className="card w-full max-w-[--max-content] overflow-hidden"
+            className="card w-full max-w-[var(--max-content)] overflow-hidden"
           >
             <input
               ref={inputRef}
@@ -139,6 +139,7 @@ export function CommandPalette({
                 }
               }}
               placeholder="Cari task atau perintah…"
+              aria-label="Cari task atau perintah"
               className="w-full bg-transparent px-5 py-4 text-[18px] text-ink outline-none placeholder:text-ink40"
               autoComplete="off"
               spellCheck={false}
@@ -154,7 +155,7 @@ export function CommandPalette({
                     type="button"
                     onMouseEnter={() => setActive(i)}
                     onClick={item.run}
-                    className={`flex w-full items-center justify-between gap-4 px-5 py-3 text-left text-[15px] transition-colors duration-[--dur-fast] ${
+                    className={`flex w-full items-center justify-between gap-4 px-5 py-3 text-left text-[15px] transition-colors duration-[var(--dur-fast)] ${
                       i === clamped ? "bg-subtle text-ink" : "text-ink70"
                     }`}
                   >

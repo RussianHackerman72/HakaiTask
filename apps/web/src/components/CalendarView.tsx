@@ -9,7 +9,7 @@ import {
   sameDay,
   tasksOnDate,
 } from "../lib/calendar.js";
-import { clock, headerDate } from "../lib/format.js";
+import { clock, headerDate, isOverdue } from "../lib/format.js";
 import { listContainer, listItem, press, rise } from "../lib/motion.js";
 import { completeTask } from "../lib/tasks.js";
 import { Checkbox, StrikeText } from "./Checkbox.js";
@@ -73,14 +73,20 @@ export function CalendarView({
             const inMonth = day.getMonth() === viewMonth.getMonth();
             const isToday = sameDay(day, now);
             const isSelected = sameDay(day, selected);
-            const count = tasksOnDate(tasks, day).length + blocksOnDate(blocks, day).length;
+            const dayTasks = tasksOnDate(tasks, day);
+            const count = dayTasks.length + blocksOnDate(blocks, day).length;
+            const anyOverdue = dayTasks.some((t) => isOverdue(t, now));
 
             return (
               <button
                 key={day.toISOString()}
                 type="button"
                 onClick={() => setSelected(day)}
-                className={`relative aspect-square rounded-2xl text-[15px] font-bold transition-colors duration-[--dur-fast] ${
+                aria-pressed={isSelected}
+                aria-label={`${headerDate(day)}${count > 0 ? `, ${count} agenda` : ", kosong"}`}
+                // h-11 (44px) — cukup buat target sentuh, tapi jauh lebih pendek
+                // dari aspect-square yang bikin grid makan setengah layar HP.
+                className={`relative flex h-11 flex-col items-center justify-center rounded-2xl text-[15px] font-bold transition-colors duration-[var(--dur-fast)] ${
                   isSelected
                     ? "bg-ink text-surface"
                     : isToday
@@ -90,14 +96,24 @@ export function CalendarView({
                         : "text-ink40"
                 }`}
               >
-                {day.getDate()}
+                <span className="leading-none">{day.getDate()}</span>
+                {/* Sampai 3 titik — sekilas kelihatan padat-enggaknya suatu hari,
+                    bukan cuma "ada isinya". Merah kalau ada yang lewat deadline. */}
                 {count > 0 && (
-                  <span
-                    aria-hidden
-                    className={`absolute bottom-1.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full ${
-                      isSelected ? "bg-surface" : "bg-ink"
-                    }`}
-                  />
+                  <span aria-hidden className="mt-1 flex gap-0.5">
+                    {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                      <span
+                        key={i}
+                        className={`h-1 w-1 rounded-full ${
+                          anyOverdue
+                            ? "bg-accent"
+                            : isSelected
+                              ? "bg-surface"
+                              : "bg-ink70"
+                        }`}
+                      />
+                    ))}
+                  </span>
                 )}
               </button>
             );
@@ -160,7 +176,7 @@ export function CalendarView({
                     <button
                       type="button"
                       onClick={() => onOpenTask(task)}
-                      className="min-w-0 flex-1 truncate text-left text-[15px] font-semibold text-ink"
+                      className="-my-3 min-w-0 flex-1 truncate py-3 text-left text-[15px] font-semibold text-ink"
                     >
                       <StrikeText done={done}>{task.title}</StrikeText>
                     </button>

@@ -54,9 +54,9 @@ export function DetailSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Detail ${task.title}`}
-            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[--radius-lg] bg-surface"
+            className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-y-auto rounded-t-[var(--radius-lg)] bg-surface"
           >
-            <div className="mx-auto w-full max-w-[--max-content] px-6 pb-10 pt-4">
+            <div className="mx-auto w-full max-w-[var(--max-content)] px-6 pb-10 pt-4">
               <div
                 aria-hidden
                 className="mx-auto mb-6 h-1 w-10 rounded-full bg-line"
@@ -204,6 +204,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
             setNewSubtask("");
           }}
           placeholder="Tambah subtask…"
+              aria-label="Tambah subtask"
           className="mt-3 w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink40"
         />
       </Section>
@@ -219,6 +220,7 @@ function Body({ task, now, onClose }: { task: Task; now: Date; onClose: () => vo
           }}
           rows={3}
           placeholder="Tulis catatan…"
+          aria-label="Catatan"
           className="w-full resize-none bg-transparent text-[15px] leading-6 text-ink outline-none placeholder:text-ink40"
         />
       </Section>
@@ -272,7 +274,7 @@ function Action({
       type="button"
       whileTap={press}
       onClick={onClick}
-      className={`t-num transition-colors duration-[--dur-fast] ${
+      className={`t-num transition-colors duration-[var(--dur-fast)] ${
         accent ? "text-ink40 hover:text-accent" : "text-ink40 hover:text-ink"
       }`}
     >

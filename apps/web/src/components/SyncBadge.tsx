@@ -10,29 +10,32 @@ const LABEL = {
 } as const;
 
 /**
- * Indikator sync (§5.1 #6). Titik kecil di header — cukup buat bilang
- * "aman kok", tanpa jadi spinner yang bikin cemas.
+ * Indikator sync (§5.1 #6).
+ *
+ * Sengaja DIAM saat semuanya aman: status "tersimpan" itu keadaan normal, dan
+ * nempelin label permanen buat keadaan normal cuma nambah keramaian di header.
+ * Dia baru muncul kalau ada yang perlu diketahui — nyimpen, offline, konflik.
  */
 export function SyncBadge() {
   const outbox = useKaiStore((s) => s.outbox);
   const online = useKaiStore((s) => s.online);
 
-  if (!supabaseConfigured) {
-    return <span className="t-num text-ink40">lokal</span>;
-  }
+  if (!supabaseConfigured) return null;
 
   const { status, count } = syncIndicator(outbox, online);
+  if (status === "synced") return null;
+
   const accent = status === "conflict";
 
   return (
     <span
-      className="t-num inline-flex items-center gap-1.5 text-ink40"
+      className={`t-num inline-flex items-center gap-1.5 ${accent ? "text-accent" : "text-ink70"}`}
       title={count > 0 ? `${count} perubahan menunggu` : undefined}
     >
       <span
         aria-hidden
         className={`inline-block h-1.5 w-1.5 rounded-full ${
-          accent ? "bg-accent" : status === "synced" ? "bg-ink40" : "bg-ink70"
+          accent ? "bg-accent" : "bg-ink70"
         } ${status === "pending" ? "animate-pulse" : ""}`}
       />
       {LABEL[status]}

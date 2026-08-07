@@ -1,4 +1,8 @@
-/** Switch iOS-style — hitam solid saat aktif, sesuai gaya bold-minimalism (§7). */
+/**
+ * Switch iOS-style — hitam solid saat aktif, sesuai gaya soft-minimalism (§7).
+ * Track-nya 48×28 tapi area sentuhnya dipaksa 44px tingginya (WCAG 2.5.5)
+ * lewat padding vertikal + margin negatif, jadi layout gak ikut kedorong.
+ */
 export function Toggle({
   on,
   onChange,
@@ -15,10 +19,11 @@ export function Toggle({
       aria-checked={on}
       aria-label={label}
       onClick={onChange}
-      className="switch-track"
-      data-on={on}
+      className="-my-2 flex shrink-0 items-center py-2"
     >
-      <span className="switch-thumb" />
+      <span className="switch-track" data-on={on}>
+        <span className="switch-thumb" />
+      </span>
     </button>
   );
 }

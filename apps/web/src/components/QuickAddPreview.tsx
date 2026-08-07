@@ -19,7 +19,7 @@ export function QuickAddExamples({ onPick }: { onPick: (v: string) => void }) {
             <button
               type="button"
               onClick={() => onPick(c)}
-              className="text-left text-[15px] font-medium text-ink70 transition-colors duration-[--dur-fast] hover:text-ink"
+              className="text-left text-[15px] font-medium text-ink70 transition-colors duration-[var(--dur-fast)] hover:text-ink"
             >
               {c}
             </button>

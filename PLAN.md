@@ -1229,6 +1229,24 @@ accent          #DC2626     #EF4444     HANYA overdue & P1
 tombol Google) gak boleh pakai isian `subtle` — dia bakal lenyap ketelan paper. Buat konteks itu
 pakai `surface` (putih). `subtle` cuma buat elemen yang duduk di dalam kartu putih.
 
+**Kontras itu syarat, bukan selera.** Tiap nilai di tabel atas udah diukur ke WCAG AA (min 4.5:1
+buat teks normal). `ink40` sempat dipasang `#9A9AA1` yang cuma 2.45:1 — kelihatan "kalem" tapi
+sebenernya susah dibaca, dan dia dipakai di 36 tempat. Kalau mau ganti warna teks, ukur dulu.
+
+### 7.2a Aturan target sentuh
+
+Semua kontrol minimal **44×44px** (WCAG 2.5.5 / Apple HIG). Kalau visualnya perlu kecil —
+checkbox, switch — tambahin padding transparan + margin negatif biar area sentuhnya tetap 44px
+tanpa ngedorong layout:
+
+```tsx
+const pad = (44 - size) / 2;
+<button style={{ padding: pad, margin: -pad }}>…</button>
+```
+
+Buat baris list, tombolnya pakai `-my-4 py-4` supaya kotak kliknya setinggi baris — bukan cuma
+setinggi teksnya.
+
 ### 7.2 Tipografi
 
 Fontnya **geometric sans** (Plus Jakarta Sans), bukan grotesk teknis kayak Geist —
@@ -1255,6 +1273,11 @@ jalan di web maupun Expo (`expo-font`).
 - Lebar konten maksimum: `640px` di web — sengaja sempit, biar fokus
 - **Kartu tanpa border, tanpa drop shadow.** Elevasi dari kontras surface vs paper.
   `line` cuma buat divider tipis di dalam kartu (antar baris list).
+
+**Sintaks Tailwind v4 buat CSS variable:** tulis `max-w-[var(--max-content)]`, BUKAN
+`max-w-[--max-content]`. Bentuk kedua menghasilkan CSS invalid yang diabaikan diam-diam —
+gak ada error, cuma stylenya gak jalan. Pernah bikin kolom 640px gak pernah aktif (layout
+melar 1268px) dan semua transisi hover mati, dua-duanya tanpa gejala di console.
 
 ### 7.4 Motion
 

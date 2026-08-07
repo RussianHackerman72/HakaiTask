@@ -15,11 +15,18 @@ import { Header } from "./components/Header.js";
 import { QuickAdd } from "./components/QuickAdd.js";
 import { buildEntries, UpcomingList } from "./components/UpcomingList.js";
 import { useLenis, useNow } from "./lib/hooks.js";
-import { fade } from "./lib/motion.js";
 import type { Page } from "./lib/pages.js";
 import { useTheme } from "./lib/theme.js";
 import { startSync } from "./lib/sync.js";
 import { useBusyBlocks, useFocus, useTasks } from "./lib/tasks.js";
+
+/** Transisi antar halaman — sengaja objek polos biar gak merambat ke anak. */
+const PAGE_ANIM = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+  transition: { duration: 0.18 },
+} as const;
 
 export default function App() {
   const auth = useAuth();
@@ -57,9 +64,14 @@ function Dashboard({
   const hydrated = useKaiStore((s) => s.hydrated);
   const tasks = useTasks();
   const blocks = useBusyBlocks();
-  const focus = useFocus(now);
 
   const [page, setPage] = useState<Page>("dashboard");
+  const [showAllUpcoming, setShowAllUpcoming] = useState(false);
+
+  // Default 5 biar dashboard tetap ringkas; kalau dibuka, tampilkan semua.
+  const focus = useFocus(now, showAllUpcoming ? 999 : 5);
+  const allUpcoming = useFocus(now, 999).upcoming.length;
+  const hiddenCount = Math.max(0, allUpcoming - focus.upcoming.length);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState<{ open: boolean; initial: string }>({
     open: false,
@@ -85,6 +97,16 @@ function Dashboard({
   );
 
   const greeting = buildGreeting(name, focus, now);
+
+  // Task yang diselesaikan hari ini — bedain "belum punya task" dari "udah kelar semua".
+  const doneToday = useMemo(() => {
+    const map = useKaiStore.getState().tasks;
+    return Object.values(map).filter(
+      (t) =>
+        t.completedAt !== undefined &&
+        new Date(t.completedAt).toDateString() === now.toDateString(),
+    ).length;
+  }, [now, tasks]);
 
   const openQuickAdd = useCallback(
     (initial = "") => setQuickAdd({ open: true, initial }),
@@ -133,7 +155,7 @@ function Dashboard({
 
   return (
     <div className="min-h-dvh bg-paper">
-      <main className="mx-auto w-full max-w-[--max-content] px-6 pb-32 pt-8">
+      <main className="mx-auto w-full max-w-[var(--max-content)] px-6 pb-32 pt-8">
         <Header
           now={now}
           page={page}
@@ -141,9 +163,16 @@ function Dashboard({
           {...(onSignOut ? { onSignOut } : {})}
         />
 
+        {/*
+          Nilai animasinya ditulis eksplisit, BUKAN label variant. Label itu
+          merambat ke semua motion descendant (kartu, baris list), jadi exit-nya
+          nunggu mereka semua kelar — dan kalau salah satu gak pernah selesai,
+          AnimatePresence nyangkut nahan halaman lama sementara nav & FAB udah
+          pindah. Objek biasa gak merambat, jadi aman.
+        */}
         <AnimatePresence mode="wait">
           {page === "dashboard" ? (
-            <motion.div key="dashboard" variants={fade} initial="hidden" animate="show" exit="exit">
+            <motion.div key="dashboard" {...PAGE_ANIM}>
               <div className="mt-10">
                 <Greeting salam={greeting.salam} baris2={greeting.baris2} />
               </div>
@@ -158,18 +187,25 @@ function Dashboard({
                     onOpen={() => setOpenTaskId(focus.focus!.id)}
                   />
                 ) : (
-                  <EmptyState onAdd={() => openQuickAdd()} />
+                  <EmptyState
+                    kind={doneToday > 0 ? "all-done" : "fresh"}
+                    doneToday={doneToday}
+                    onAdd={() => openQuickAdd()}
+                  />
                 )}
 
                 <UpcomingList
                   entries={entries}
                   now={now}
                   onOpen={(task) => setOpenTaskId(task.id)}
+                  hiddenCount={hiddenCount}
+                  expanded={showAllUpcoming}
+                  onToggleExpand={() => setShowAllUpcoming((v) => !v)}
                 />
               </div>
             </motion.div>
           ) : (
-            <motion.div key="calendar" variants={fade} initial="hidden" animate="show" exit="exit" className="mt-10">
+            <motion.div key="calendar" {...PAGE_ANIM} className="mt-10">
               <CalendarView
                 now={now}
                 tasks={tasks}
@@ -182,7 +218,13 @@ function Dashboard({
         </AnimatePresence>
       </main>
 
-      <Fab onClick={() => openQuickAdd()} />
+      {/*
+        FAB cuma di dashboard. Di kalender dia nutupin sel tanggal (fixed ke
+        viewport, jadi ngambang di atas grid) DAN ambigu — mau nambah ke hari
+        ini atau ke tanggal yang lagi dipilih? Halaman itu udah punya composer
+        sendiri yang jelas nempel ke tanggal terpilih.
+      */}
+      {page === "dashboard" && <Fab onClick={() => openQuickAdd()} />}
 
       <DetailSheet task={openTask} now={now} onClose={() => setOpenTaskId(null)} />
 

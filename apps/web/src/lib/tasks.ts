@@ -45,13 +45,13 @@ export function useEnergyMode(now: Date): Energy {
   return mode === "auto" ? inferEnergyMode(now) : mode;
 }
 
-export function useFocus(now: Date): FocusSelection {
+export function useFocus(now: Date, upcomingCount = 5): FocusSelection {
   const tasks = useTasks();
   const energyMode = useEnergyMode(now);
   // `now` dibulatkan ke menit oleh useNow, jadi memo ini gak ke-bust tiap render.
   return useMemo(
-    () => selectFocus(tasks, { now, energyMode }),
-    [tasks, now, energyMode],
+    () => selectFocus(tasks, { now, energyMode }, upcomingCount),
+    [tasks, now, energyMode, upcomingCount],
   );
 }
 

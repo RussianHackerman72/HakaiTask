@@ -93,7 +93,7 @@ export function SignIn() {
       variants={rise}
       initial="hidden"
       animate="show"
-      className="mx-auto flex min-h-dvh w-full max-w-[--max-content] flex-col justify-center px-6"
+      className="mx-auto flex min-h-dvh w-full max-w-[var(--max-content)] flex-col justify-center px-6"
     >
       <h1 className="t-display text-ink">HaKaiTask</h1>
       <p className="mt-3 text-[16px] font-medium leading-6 text-ink70">

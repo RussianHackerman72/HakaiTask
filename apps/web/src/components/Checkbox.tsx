@@ -18,6 +18,13 @@ export function Checkbox({
 }) {
   const reduced = useReducedMotion();
 
+  /**
+   * Area sentuh dipaksa 44px (WCAG 2.5.5 / Apple HIG) walau lingkarannya kecil.
+   * Margin negatif nahan supaya padding ekstra ini gak ngedorong layout —
+   * nyentang task itu aksi paling sering di app ini, target 18px gak kemakan.
+   */
+  const pad = Math.max(0, (44 - size) / 2);
+
   return (
     <button
       type="button"
@@ -28,21 +35,26 @@ export function Checkbox({
         e.stopPropagation();
         onChange();
       }}
-      className="grid shrink-0 place-items-center rounded-full border-2 border-ink40 transition-colors duration-[--dur-fast] hover:border-ink"
-      style={{ width: size, height: size }}
+      className="group grid shrink-0 place-items-center"
+      style={{ padding: pad, margin: -pad }}
     >
-      <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 12 12" fill="none">
-        <motion.path
-          d="M1.5 6.4 L4.6 9.4 L10.5 2.8"
-          stroke="currentColor"
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          initial={false}
-          animate={{ pathLength: checked ? 1 : 0, opacity: checked ? 1 : 0 }}
-          transition={{ duration: reduced ? 0 : 0.18, ease: ease.standard }}
-        />
-      </svg>
+      <span
+        className="grid place-items-center rounded-full border-2 border-ink40 transition-colors duration-[var(--dur-fast)] group-hover:border-ink"
+        style={{ width: size, height: size }}
+      >
+        <svg width={size * 0.55} height={size * 0.55} viewBox="0 0 12 12" fill="none">
+          <motion.path
+            d="M1.5 6.4 L4.6 9.4 L10.5 2.8"
+            stroke="currentColor"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            initial={false}
+            animate={{ pathLength: checked ? 1 : 0, opacity: checked ? 1 : 0 }}
+            transition={{ duration: reduced ? 0 : 0.18, ease: ease.standard }}
+          />
+        </svg>
+      </span>
     </button>
   );
 }

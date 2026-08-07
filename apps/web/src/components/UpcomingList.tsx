@@ -40,10 +40,17 @@ export function UpcomingList({
   entries,
   now,
   onOpen,
+  hiddenCount = 0,
+  expanded = false,
+  onToggleExpand,
 }: {
   entries: UpcomingEntry[];
   now: Date;
   onOpen: (task: Task) => void;
+  /** Berapa task lagi yang gak ditampilin — biar user tau daftarnya masih ada lanjutannya. */
+  hiddenCount?: number;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }) {
   if (entries.length === 0) return null;
 
@@ -71,6 +78,16 @@ export function UpcomingList({
           )}
         </AnimatePresence>
       </motion.ul>
+
+      {onToggleExpand && (hiddenCount > 0 || expanded) && (
+        <button
+          type="button"
+          onClick={onToggleExpand}
+          className="t-meta mt-3 rounded-full px-1 py-2 text-ink70 transition-colors duration-[var(--dur-fast)] hover:text-ink"
+        >
+          {expanded ? "Tampilkan lebih sedikit" : `Lihat ${hiddenCount} lainnya`}
+        </button>
+      )}
     </section>
   );
 }
@@ -106,10 +123,12 @@ function TaskRow({ task, now, onOpen }: { task: Task; now: Date; onOpen: () => v
         {when}
       </span>
 
+      {/* -my-4 py-4 bikin kotak kliknya setinggi baris — kalau enggak, cuma
+          pas di teks setinggi 23px doang yang bisa dipencet. */}
       <button
         type="button"
         onClick={onOpen}
-        className="min-w-0 flex-1 truncate text-left text-[15px] text-ink"
+        className="-my-4 min-w-0 flex-1 truncate py-4 text-left text-[15px] text-ink"
       >
         <StrikeText done={done}>{task.title}</StrikeText>
       </button>

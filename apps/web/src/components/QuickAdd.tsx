@@ -63,7 +63,7 @@ export function QuickAdd({
             role="dialog"
             aria-modal="true"
             aria-label="Tambah cepat"
-            className="card w-full max-w-[--max-content] overflow-hidden"
+            className="card w-full max-w-[var(--max-content)] overflow-hidden"
           >
             <input
               ref={inputRef}
@@ -76,6 +76,7 @@ export function QuickAdd({
                 }
               }}
               placeholder="Tulis apa aja — “bsk jam 2 rapat klien”"
+              aria-label="Tulis task baru"
               className="w-full bg-transparent px-5 py-5 text-[20px] font-semibold text-ink outline-none placeholder:font-normal placeholder:text-ink40"
               autoComplete="off"
               spellCheck={false}

@@ -13,7 +13,11 @@ export const color = {
   light: {
     ink: "#0D0D0F",
     ink70: "#5A5A60",
-    ink40: "#9A9AA1",
+    /**
+     * Kontras WCAG AA: 5.0:1 di paper, 5.7:1 di surface. Nilai lama (#9A9AA1)
+     * cuma 2.45:1 — gagal telak padahal dipakai buat jam, tanggal, & meta.
+     */
+    ink40: "#66666D",
     /** Divider tipis. Sengaja nyaris gak kelihatan — pemisah utama itu jarak. */
     line: "#E7E7E7",
     /** Isian lembut buat chip & tombol ikon di atas kartu putih. */
@@ -25,7 +29,8 @@ export const color = {
   dark: {
     ink: "#F7F7F5",
     ink70: "#A8A8AD",
-    ink40: "#74747A",
+    /** 5.1:1 di surface gelap. Nilai lama (#74747A) cuma 3.7:1. */
+    ink40: "#8A8A90",
     line: "#2B2B2E",
     subtle: "#27272B",
     surface: "#1A1A1C",
