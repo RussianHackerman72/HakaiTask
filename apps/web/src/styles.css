@@ -1,0 +1,85 @@
+@import "tailwindcss";
+@import "./tokens.generated.css";
+
+@import "@fontsource/instrument-serif/400.css";
+@import "@fontsource/geist-sans/400.css";
+@import "@fontsource/geist-sans/500.css";
+@import "@fontsource/geist-sans/600.css";
+@import "@fontsource/geist-mono/400.css";
+
+/* Jembatan token → utility Tailwind. Nilai aslinya tetap dari packages/tokens. */
+@theme inline {
+  --color-ink: var(--c-ink);
+  --color-ink70: var(--c-ink70);
+  --color-ink40: var(--c-ink40);
+  --color-line: var(--c-line);
+  --color-surface: var(--c-surface);
+  --color-paper: var(--c-paper);
+  --color-accent: var(--c-accent);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+@layer base {
+  html {
+    background: var(--c-paper);
+    color: var(--c-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+  }
+
+  /* Lenis butuh ini biar smooth scroll gak berantem sama scroll native. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  ::selection {
+    background: var(--c-ink);
+    color: var(--c-paper);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--c-ink);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .t-display {
+    font-family: var(--font-display);
+    font-size: clamp(34px, 8vw, var(--t-display-size));
+    line-height: 1.05;
+    font-weight: var(--t-display-weight);
+    letter-spacing: var(--t-display-tracking);
+  }
+
+  .t-meta {
+    font-size: var(--t-meta-size);
+    line-height: var(--t-meta-leading);
+    font-weight: var(--t-meta-weight);
+    letter-spacing: var(--t-meta-tracking);
+    text-transform: uppercase;
+  }
+
+  .t-mono {
+    font-family: var(--font-mono);
+    font-size: var(--t-mono-size);
+    line-height: var(--t-mono-leading);
+    font-variant-numeric: tabular-nums;
+  }
+}

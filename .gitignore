@@ -4,6 +4,9 @@ build/
 .turbo/
 coverage/
 
+# dihasilkan dari packages/tokens saat vite start (apps/web/vite.config.ts)
+apps/web/src/tokens.generated.css
+
 # env
 .env
 .env.local
@@ -13,6 +16,7 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+.claude/settings.local.json
 .DS_Store
 Thumbs.db
 

@@ -13,6 +13,8 @@ import {
   emptyOutbox,
   enqueue,
   fail,
+  lockedFieldsFor,
+  mergeLWW,
   type Mutation,
   type OutboxState,
 } from "../sync/index.js";
@@ -30,6 +32,12 @@ export interface KaiState {
   upsertTask: (task: Task, fields?: string[]) => void;
   patchTask: (id: string, patch: Partial<Task>) => void;
   removeTask: (id: string) => void;
+  /** Terapkan baris dari server ke store lokal, LWW per field (§6.8). */
+  mergeRemoteTask: (remote: Task, remoteAt: string) => void;
+  upsertBusyBlock: (block: BusyBlock) => void;
+  removeBusyBlock: (id: string) => void;
+  setSettings: (settings: UserSettings) => void;
+  setHydrated: () => void;
   setOnline: (online: boolean) => void;
   ackMutation: (id: string) => void;
   failMutation: (id: string) => void;
@@ -38,9 +46,31 @@ export interface KaiState {
 
 let storageAdapter: StateStorage | undefined;
 
-/** Panggil sekali saat boot, sebelum store dipakai. */
-export function configureStorage(adapter: StateStorage): void {
+function requireAdapter(): StateStorage {
+  if (!storageAdapter) {
+    throw new Error("configureStorage() belum dipanggil — panggil sebelum store dipakai.");
+  }
+  return storageAdapter;
+}
+
+/**
+ * Adapter dibaca per panggilan, bukan sekali di awal: modul ini dievaluasi
+ * saat di-import, jauh sebelum app sempat manggil configureStorage().
+ */
+const lazyStorage: StateStorage = {
+  getItem: (name) => requireAdapter().getItem(name),
+  setItem: (name, value) => requireAdapter().setItem(name, value),
+  removeItem: (name) => requireAdapter().removeItem(name),
+};
+
+/**
+ * Panggil sekali saat boot. Hydration sengaja ditunda sampai di sini
+ * (`skipHydration`) — kalau enggak, persist bakal nyoba baca storage pas
+ * modul di-import dan gagal diam-diam, bikin app nyangkut sebelum render.
+ */
+export function configureStorage(adapter: StateStorage): Promise<void> {
   storageAdapter = adapter;
+  return useKaiStore.persist.rehydrate() ?? Promise.resolve();
 }
 
 function nowIso(): string {
@@ -125,6 +155,54 @@ export const useKaiStore = create<KaiState>()(
         });
       },
 
+      /**
+       * Server gak nyimpen waktu per field — dia cuma punya satu `updatedAt`
+       * per baris. Jadi waktu itu dipakai buat semua field yang dikirim, dan
+       * field yang masih nunggu di outbox dikunci supaya gak ketimpa.
+       */
+      mergeRemoteTask: (remote, remoteAt) => {
+        set((s) => {
+          const local = s.tasks[remote.id];
+          if (!local) {
+            return {
+              tasks: { ...s.tasks, [remote.id]: remote },
+              fieldTimes: {
+                ...s.fieldTimes,
+                [remote.id]: stampFields(Object.keys(remote), remoteAt),
+              },
+            };
+          }
+          const { merged, times } = mergeLWW(
+            local as unknown as Record<string, unknown>,
+            remote as unknown as Record<string, unknown>,
+            s.fieldTimes[remote.id] ?? {},
+            stampFields(Object.keys(remote), remoteAt),
+            lockedFieldsFor(s.outbox, remote.id),
+          );
+          return {
+            tasks: { ...s.tasks, [remote.id]: merged as unknown as Task },
+            fieldTimes: { ...s.fieldTimes, [remote.id]: times },
+          };
+        });
+      },
+
+      /**
+       * Busy block masih lokal murni — sync-nya nyusul bareng time blocking
+       * di Fase 4 (§6.2). Sengaja gak masuk outbox biar antreannya gak keisi
+       * mutasi yang belum ada penanganannya di sisi kirim.
+       */
+      upsertBusyBlock: (block) =>
+        set((s) => ({ busyBlocks: { ...s.busyBlocks, [block.id]: block } })),
+
+      removeBusyBlock: (id) =>
+        set((s) => {
+          const next = { ...s.busyBlocks };
+          delete next[id];
+          return { busyBlocks: next };
+        }),
+
+      setSettings: (settings) => set({ settings }),
+      setHydrated: () => set({ hydrated: true }),
       setOnline: (online) => set({ online }),
       ackMutation: (id) => set((s) => ({ outbox: ack(s.outbox, id) })),
       failMutation: (id) => set((s) => ({ outbox: fail(s.outbox, id) })),
@@ -133,14 +211,8 @@ export const useKaiStore = create<KaiState>()(
     {
       name: "hakaitask",
       version: 1,
-      storage: createJSONStorage(() => {
-        if (!storageAdapter) {
-          throw new Error(
-            "configureStorage() belum dipanggil — panggil sebelum store dipakai.",
-          );
-        }
-        return storageAdapter;
-      }),
+      skipHydration: true,
+      storage: createJSONStorage(() => lazyStorage),
       partialize: (s) => ({
         tasks: s.tasks,
         projects: s.projects,
@@ -149,8 +221,20 @@ export const useKaiStore = create<KaiState>()(
         fieldTimes: s.fieldTimes,
         outbox: s.outbox,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state) state.hydrated = true;
+      // Wajib lewat action, bukan mutasi langsung ke objek state: mutasi
+      // in-place gak nge-notify subscriber, jadi UI bakal nyangkut di layar
+      // kosong selamanya. Dipanggil juga saat gagal baca storage supaya app
+      // tetap jalan (offline-first, §6.8).
+      onRehydrateStorage: () => (state, error) => {
+        if (error) console.warn("[store] gagal baca penyimpanan lokal", error);
+        if (state) {
+          state.setHydrated();
+          return;
+        }
+        // Storage rusak/diblokir: app tetap harus jalan, jangan nyangkut di
+        // layar kosong. Ditunda satu microtask karena callback ini bisa
+        // kepanggil sebelum `useKaiStore` selesai diinisialisasi.
+        queueMicrotask(() => useKaiStore.getState().setHydrated());
       },
     },
   ),

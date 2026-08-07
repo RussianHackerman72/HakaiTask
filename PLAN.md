@@ -3,7 +3,7 @@
 Personal to-do list untuk web + Android (APK).
 Dokumen ini acuan tunggal sebelum & selama development.
 
-- **Status:** Fase 0 selesai — fondasi jalan, 41 test lolos
+- **Status:** Fase 1 selesai — MVP web jalan di `apps/web`, 49 test lolos
 - **Terakhir diperbarui:** 7 Agustus 2026
 - **Pemilik:** Kai
 
