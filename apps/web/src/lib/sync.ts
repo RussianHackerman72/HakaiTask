@@ -37,7 +37,15 @@ async function push(mutation: Mutation, userId: string): Promise<void> {
 
   // Upsert, bukan insert-atau-update terpisah: bikin mutasi aman diulang
   // kalau responsnya hilang di tengah jalan (at-least-once delivery).
-  const row = { ...toRow(mutation.payload), id: mutation.entityId, user_id: userId };
+  //
+  // Kirim SNAPSHOT task saat ini, bukan cuma payload/patch mutasinya: kalau
+  // mutasi "create" entitas ini gagal duluan (mati di outbox) dan baru
+  // "update" yang sampai server, upsert dari patch doang bakal coba insert
+  // baris baru tanpa kolom wajib (mis. title) — selalu ditolak NOT NULL,
+  // gagal-retry selamanya. Snapshot penuh selalu punya semua kolom wajib.
+  const task = useKaiStore.getState().tasks[mutation.entityId];
+  if (!task) return;
+  const row = { ...toRow(task), id: mutation.entityId, user_id: userId };
   const { error } = await supabase.from("tasks").upsert(row, { onConflict: "id" });
   if (error) throw error;
 }
