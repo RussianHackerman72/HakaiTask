@@ -187,11 +187,13 @@ describe("alur — lihat", () => {
     expect(out).toContain("Meeting Client A");
   });
 
-  it("'jadwal' tetap nyaring ke jadwal aja", () => {
+  it("'jadwal', 'task', dan 'agenda' nemu hal yang sama", () => {
     const blocks = [block("b1", "Meeting Client A", iso(2026, 8, 8, 15, 0), iso(2026, 8, 8, 16, 0))];
-    const out = textOf(conv({ tasks, blocks }).send("tampilin jadwal gw besok"));
-    expect(out).toContain("Meeting Client A");
-    expect(out).not.toContain("Bikin laporan");
+    for (const kata of ["jadwal", "task", "agenda"]) {
+      const out = textOf(conv({ tasks, blocks }).send(`tampilin ${kata} gw besok`));
+      expect(out, kata).toContain("Meeting Client A");
+      expect(out, kata).toContain("Bikin laporan");
+    }
   });
 
   it("nanya task besok", () => {
@@ -532,13 +534,11 @@ describe("regresi — laporan bug 'hapus task di hari itu'", () => {
     expect(out).not.toContain("Senin");
   });
 
-  it("kosong di satu jenis tapi ada di jenis lain → sebutin, jangan diem", () => {
-    const out = textOf(conv({ blocks }).send("hapus task hari senin"));
-    expect(out).toContain("Gak ada task");
-    expect(out).toContain("1 jadwal");
+  it("'hapus task hari senin' nemu apa pun yang ada di Senin", () => {
+    expect(textOf(conv({ blocks }).send("hapus task hari senin"))).toContain("Bangun subuh");
   });
 
-  it("kalau dua-duanya kosong, tetap pesan biasa", () => {
+  it("kalau emang kosong, tetap pesan biasa", () => {
     expect(textOf(conv().send("hapus task hari senin"))).toContain("Gak nemu");
   });
 });
@@ -670,39 +670,44 @@ describe("titipan teks dari kalender", () => {
 
 /**
  * Dilaporin dari pemakaian nyata: "tampilin jadwal hari rabu" dijawab "gak
- * ada" padahal hari itu ada isinya — cuma tersimpan sebagai task, bukan
- * jadwal. Jawabannya benar secara harfiah tapi bikin app kelihatan rusak.
+ * ada" padahal hari itu ada isinya — cuma tersimpan sebagai task.
+ *
+ * Dibenerin di akarnya: task & jadwal disatuin, jadi seluruh kelas kegagalan
+ * "kesimpen di jenis A, dicari pakai kata jenis B" jadi mustahil.
  */
-describe("regresi — LIST kosong tapi jenis satunya ada", () => {
+describe("regresi — task & jadwal disatuin", () => {
   const tasks = [task("t1", "Kelas pagi", { dueAt: iso(2026, 8, 12, 8, 0) })];
   const blocks = [block("b1", "Standup", iso(2026, 8, 12, 9, 0), iso(2026, 8, 12, 9, 15))];
 
-  it("nanya jadwal padahal yang ada task → task-nya disebut", () => {
-    const out = textOf(conv({ tasks }).send("tampilin jadwal hari rabu"));
-    expect(out).toContain("Gak ada jadwal Rabu");
-    expect(out).toContain("1 task");
+  it("nanya 'jadwal' nemu task", () => {
+    expect(textOf(conv({ tasks }).send("tampilin jadwal hari rabu"))).toContain("Kelas pagi");
   });
 
-  it("nanya task padahal yang ada jadwal → jadwalnya disebut", () => {
-    const out = textOf(conv({ blocks }).send("tampilin task hari rabu"));
-    expect(out).toContain("1 jadwal");
+  it("nanya 'task' nemu jadwal lama", () => {
+    expect(textOf(conv({ blocks }).send("tampilin task hari rabu"))).toContain("Standup");
   });
 
-  it("dua-duanya kosong → jangan ngarang petunjuk", () => {
-    const out = textOf(conv().send("tampilin jadwal hari rabu"));
-    expect(out).toContain("Gak ada jadwal Rabu");
-    expect(out).not.toContain("maksudnya itu");
-  });
-
-  it("kalau jenisnya emang ketemu, gak ada embel-embel", () => {
-    const out = textOf(conv({ blocks }).send("tampilin jadwal hari rabu"));
+  it("dua-duanya kebaca sekaligus", () => {
+    const out = textOf(conv({ tasks, blocks }).send("tampilin agenda hari rabu"));
+    expect(out).toContain("Kelas pagi");
     expect(out).toContain("Standup");
-    expect(out).not.toContain("maksudnya itu");
   });
 
-  it("'agenda' gak kena petunjuk ini — dia emang nyari dua-duanya", () => {
-    const out = textOf(conv().send("tampilin agenda hari rabu"));
-    expect(out).not.toContain("maksudnya itu");
+  it("beneran kosong tetap dibilang kosong", () => {
+    expect(textOf(conv().send("tampilin jadwal hari rabu"))).toContain("Gak ada agenda");
+  });
+
+  it("bikin lewat kata 'rapat' tetap jadi TASK, bukan jenis terpisah", () => {
+    const r = conv().send("jadwalin rapat sama klien besok jam 3");
+    const e = r.effects[0] as Extract<Effect, { type: "CREATE_FROM_PARSE" }>;
+    expect(e.parsed.kind).toBe("task");
+  });
+
+  it("bikin pakai 'rapat' langsung ketemu waktu dicari pakai 'task'", () => {
+    const dibikin = conv().send("jadwalin rapat sama klien besok jam 3");
+    const e = dibikin.effects[0] as Extract<Effect, { type: "CREATE_FROM_PARSE" }>;
+    const dibuat = task("baru", e.parsed.title, { dueAt: e.parsed.dueAt!.toISOString() });
+    expect(textOf(conv({ tasks: [dibuat] }).send("tampilin task besok"))).toContain(e.parsed.title);
   });
 });
 

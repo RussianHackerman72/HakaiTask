@@ -62,27 +62,22 @@ export function useFocus(now: Date, upcomingCount = 5): FocusSelection {
 
 // ── aksi ─────────────────────────────────────────────────────────────────────
 
-/** Ubah hasil parser jadi Task (atau BusyBlock kalau niatnya "jadwal"). */
+/**
+ * Ubah hasil parser jadi Task. **Selalu** Task sekarang.
+ *
+ * Dulu `kind: "busy"` (dipicu kata kayak "rapat"/"jadwalin") bikin BusyBlock
+ * — jenis terpisah tanpa status selesai. Itu bikin pemisahan yang gak pernah
+ * diminta user: bikin sesuatu pakai kata "rapat", lalu "tampilin task" gak
+ * nemu, dan sebaliknya. Orang gak mikir "ini task apa jadwal", dia cuma tau
+ * ada sesuatu di hari Rabu.
+ *
+ * Info waktunya gak ada yang hilang: rentang jam eksplisit ("jam 3-4") tetap
+ * kesimpan di `startAt` + `estimateMin`. BusyBlock lama tetap kebaca, kehapus,
+ * dan bisa digeser — cuma gak dibikin baru lagi.
+ */
 export function createFromParse(parsed: ParseResult, userId: string): string {
   const store = useKaiStore.getState();
   const id = newId();
-
-  // Parser nulis jam tunggal ("jam 3") ke dueAt, cuma rentang eksplisit
-  // ("jam 3-4") yang kepisah startAt/endAt — jadi anchor busy block ambil
-  // yang mana aja yang keisi (§6.1.6).
-  if (parsed.kind === "busy" && (parsed.startAt ?? parsed.dueAt)) {
-    const start = parsed.startAt ?? parsed.dueAt!;
-    const end = parsed.endAt ?? new Date(start.getTime() + (parsed.estimateMin ?? 60) * 60_000);
-    store.upsertBusyBlock({
-      id,
-      userId,
-      title: parsed.title,
-      startAt: start.toISOString(),
-      endAt: end.toISOString(),
-      ...(parsed.recurrence ? { recurrence: parsed.recurrence } : {}),
-    });
-    return id;
-  }
 
   const task = makeTask({
     id,

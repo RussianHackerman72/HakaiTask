@@ -8,7 +8,7 @@
  * Acuan waktu disamain sama parser.test.ts: Jumat, 7 Agustus 2026, 10:00.
  */
 import { describe, expect, it } from "vitest";
-import { analyze, inferKind, isQuestion } from "./intent.js";
+import { analyze, isQuestion } from "./intent.js";
 import { resolveDateRange, upcomingRange } from "./range.js";
 import { words } from "./match.js";
 
@@ -157,14 +157,12 @@ describe("racun kamus lama — empat kasus yang bikin lapisan verba wajib ada", 
   it("T4 — 'hapus task laporan' jadi perintah hapus, BUKAN task berjudul 'Hapus…'", () => {
     const a = analyze("hapus task laporan", NOW);
     expect(a.verb).toBe("delete");
-    expect(a.kind).toBe("task");
     expect(a.keyword).toBe("laporan");
   });
 
   it("T2 — 'belum selesai' kebaca status, padahal kata itu ada di daftar drop", () => {
     const a = analyze("tampilin task yang belum selesai", NOW);
     expect(a.verb).toBe("list");
-    expect(a.kind).toBe("task");
     expect(a.status).toBe("todo");
   });
 
@@ -175,7 +173,6 @@ describe("racun kamus lama — empat kasus yang bikin lapisan verba wajib ada", 
   it("T3 — 'jadwal' jadi OBJEK, bukan perintah bikin jadwal", () => {
     const a = analyze("jadwal gw hari ini apa?", NOW);
     expect(a.verb).toBe("list");
-    expect(a.kind).toBe("schedule");
     expect(a.range?.label).toBe("hari ini");
   });
 
@@ -225,7 +222,6 @@ describe("analisis — penyaring", () => {
     expect(a.topic).toBe("rapat");
     expect(a.bulk).toBe(true);
     expect(a.keyword).toBe("rapat");
-    expect(a.kind).toBe("schedule");
   });
 
   it("topik multi-kata: 'urusan kampus' → kuliah", () => {
@@ -248,7 +244,6 @@ describe("analisis — kalimat tanya tanpa verba", () => {
   it("'apa aja tugas gw hari ini?' kebaca list", () => {
     const a = analyze("apa aja tugas gw hari ini?", NOW);
     expect(a.verb).toBe("list");
-    expect(a.kind).toBe("task");
     expect(a.range?.label).toBe("hari ini");
   });
 
@@ -299,12 +294,17 @@ describe("analisis — objek kamus pribadi", () => {
   });
 });
 
-describe("tebakan jenis dari kata benda", () => {
-  it("kata benda jadwal", () => {
-    expect(inferKind(words("ada rapat besok"))).toBe("schedule");
+describe("task & jadwal disatuin", () => {
+  it("kata benda kayak 'rapat' gak lagi nyempitin jenis", () => {
+    expect(analyze("ada rapat besok", NOW).kind).toBe("any");
   });
 
-  it("netral kalau gak ada petunjuk", () => {
-    expect(inferKind(words("besok pagi"))).toBe("any");
+  it("'task' dan 'jadwal' sekarang berarti hal yang sama", () => {
+    expect(analyze("tampilin task gw", NOW).kind).toBe("any");
+    expect(analyze("tampilin jadwal gw", NOW).kind).toBe("any");
+  });
+
+  it("kamus pribadi tetap objek yang kepisah", () => {
+    expect(analyze("tampilin vocabulary gw", NOW).kind).toBe("vocab");
   });
 });

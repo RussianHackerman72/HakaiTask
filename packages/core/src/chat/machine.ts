@@ -132,8 +132,12 @@ function alive(p: Pending, now: Date): Pending {
   return now.getTime() - p.at <= PENDING_TTL_MS ? p : null;
 }
 
+/**
+ * Sebutan buat isi hari. Task & jadwal udah disatuin, jadi defaultnya
+ * "agenda" — kata yang di bahasa sehari-hari nyakup dua-duanya.
+ */
 function whatOf(kind: ObjectKind): string {
-  return kind === "task" ? "task" : kind === "schedule" ? "jadwal" : "item";
+  return kind === "task" ? "task" : kind === "schedule" ? "jadwal" : "agenda";
 }
 
 const TOPIC_GENERIC = chatLex.topicGeneric as Record<string, string[]>;
@@ -452,7 +456,13 @@ function doCreate(input: string, ctx: ChatContext): TurnResult {
 
   const raw = parseQuickAdd(input, { now: ctx.now, userLexicon });
   const title = cleanTitle(raw.title, (raw.startAt ?? raw.dueAt) !== undefined);
-  const parsed = title === raw.title ? raw : { ...raw, title };
+
+  // `kind` dipaksa "task". Parser masih bisa nyimpulin "busy" dari kata kayak
+  // "rapat"/"jadwalin", tapi pemisahan itu udah dibuang dari model: user gak
+  // pernah minta dua jenis, dan bedanya cuma bikin barang yang dia bikin gak
+  // ketemu waktu dicari pakai kata yang lain. Keputusannya ditaruh DI SINI,
+  // bukan di lapisan app, biar ikut ketahan tes.
+  const parsed: ParseResult = { ...raw, title, kind: "task" };
 
   // Judul tanpa satu huruf pun ("1", "42", "-") bukan judul — itu ketikan
   // nyasar, atau jawaban ordinal yang nyampe pas pending-nya udah lewat.
@@ -482,8 +492,6 @@ function doCreate(input: string, ctx: ChatContext): TurnResult {
  * perintah.
  */
 const LEADING_NOISE = new Set([
-  ...(chatLex.objects.task as string[]),
-  ...(chatLex.objects.schedule as string[]),
   ...(chatLex.objects.any as string[]),
   "buat",
   "untuk",

@@ -816,3 +816,33 @@ Itu keuntungan terbesar dari arsitektur non-AI yang murni — dan alasan kenapa
 | 2026-08-09 | Ketersediaan: titik di MVP, celah di Fase 2 | Celah butuh §6.2 yang belum ada (T9) |
 | 2026-08-09 | Sedikit intent, banyak filter | Nyegah ledakan kombinatorial (§3) |
 | 2026-08-09 | Kalau ragu, pilih baca | Salah-baca murah, salah-tulis mahal (§1.3) |
+| 2026-08-09 | **Task & jadwal disatuin jadi satu jenis** | Lihat §23 |
+
+---
+
+## §23 Task & jadwal disatuin
+
+**Keputusan:** input chat SELALU bikin Task. Kata `task`, `jadwal`, dan
+`agenda` semuanya berarti hal yang sama waktu nyari.
+
+**Kenapa.** Pemisahan itu bikin satu kelas kegagalan yang kejadian berkali-kali
+di pemakaian nyata: user bikin sesuatu pakai kata yang kebetulan masuk
+`nounSchedule` ("rapat", "zoom", "kelas"), barangnya jadi `BusyBlock` — lalu
+"tampilin task" gak nemu. Kebalikannya juga. Tiap kali, jawabannya benar
+secara harfiah dan **salah secara pengalaman**: user gak mikir "ini task apa
+jadwal", dia cuma tau ada sesuatu di hari Rabu.
+
+Sempat ditambal dengan petunjuk "tapi ada N jadwal — maksudnya itu?". Itu
+nutupin gejalanya, bukan sebabnya: sistemnya tetap minta user mikirin
+pembagian yang gak pernah dia minta.
+
+**Yang gak hilang.** Rentang jam eksplisit ("jam 3-4") tetap kesimpan di
+`startAt` + `estimateMin`, jadi durasi buat perhitungan celah §6.2 masih utuh.
+`BusyBlock` lama tetap kebaca, ketemu di pencarian, bisa dihapus dan digeser —
+cuma gak dibikin baru lagi.
+
+**Yang direlakan.** Sigil `%sibuk` gak lagi bikin jenis terpisah, dan blok
+"nutup slot tanpa perlu dicentang" jadi hilang sebagai konsep baru. Kalau nanti
+time blocking butuh itu lagi, bedanya lebih tepat jadi **atribut** di Task
+(mis. `blocking: true`) daripada jenis kedua — atribut gak bikin barang hilang
+dari pencarian.

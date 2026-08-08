@@ -49,13 +49,15 @@
     ]
   },
 
-  "_catatan_objek": "'vocabulary' sengaja jadi OBJEK, bukan verba tersendiri. Dengan begitu 'tampilin vocabulary gw' dan 'hapus vocabulary clientan' dua-duanya jalan tanpa verba baru — cukup kombinasi verba lama + objek ini (PLAN-CHAT §3: sedikit intent, banyak filter).",
+  "_catatan_objek": "TASK DAN JADWAL DISATUIN. Dulu 'task' dan 'jadwal' dua jenis berbeda, dan itu jadi sumber kebingungan berulang: user bikin sesuatu lewat kata 'rapat' (jadi blok jadwal), lalu 'tampilin task' gak nemu — dan sebaliknya. User gak mikir dalam kategori itu; dia cuma tau ada sesuatu di hari Rabu. Sekarang semua kata di bawah berarti hal yang sama: SEMUA isi harimu. 'vocabulary' tetap kepisah karena dia beneran objek lain (kamus pribadi, bukan agenda).",
 
   "objects": {
-    "task": ["task", "tugas", "todo", "to do", "kerjaan", "pekerjaan", "pr"],
-    "schedule": ["jadwal", "schedule", "jadwalku"],
-    "vocab": ["vocabulary", "vocab", "kamus", "kosakata", "istilah"],
-    "any": ["agenda", "kegiatan", "acara", "rencana"]
+    "any": [
+      "task", "tugas", "todo", "to do", "kerjaan", "pekerjaan", "pr",
+      "jadwal", "schedule", "jadwalku",
+      "agenda", "kegiatan", "acara", "rencana"
+    ],
+    "vocab": ["vocabulary", "vocab", "kamus", "kosakata", "istilah"]
   },
 
   "_catatan_objek_any": "'agenda' TIDAK dimasukkan ke schedule. Waktu dites di browser, 'apa aja agenda gw besok?' cuma balikin jadwal dan diam-diam ngumpetin dua task yang jatuh tempo besok. Padahal orang nanya 'agenda' justru buat lihat SEMUA yang ada di piringnya hari itu. Kata di grup ini tetap dikonsumsi (biar gak jadi kata kunci) tapi gak mempersempit jenis — persis LIST_AGENDA di PLAN-CHAT §3.",

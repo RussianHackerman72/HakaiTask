@@ -34,13 +34,11 @@ export type ObjectKind = "task" | "schedule" | "vocab" | "any";
 export type StatusFilter = "todo" | "done" | "overdue";
 
 const VERBS = chatLex.verbs as Record<Exclude<Verb, "create" | "unknown" | "any">, string[]>;
-const OBJECTS = chatLex.objects as Record<ObjectKind, string[]>;
+const OBJECTS = chatLex.objects as Record<"any" | "vocab", string[]>;
 const STATUS = chatLex.statusWords as Record<StatusFilter, string[]>;
 const TOPICS = chatLex.topicGroups as Record<string, string[]>;
 const QUESTION = chatLex.questionWords as string[];
 const BULK = chatLex.bulkWords as string[];
-const NOUN_SCHEDULE = lex.nounSchedule as string[];
-const NOUN_TASK = lex.nounTask as string[];
 
 /**
  * Kata sisa yang gak layak jadi kata kunci pencarian.
@@ -102,19 +100,6 @@ export function readObject(
 ): { kind: ObjectKind; len: number } | null {
   const hit = findLongestIn(ws, i, OBJECTS);
   return hit ? { kind: hit.key, len: hit.len } : null;
-}
-
-/**
- * Tebakan jenis dari kata benda isi kalimat — TIDAK mengonsumsi token, karena
- * kata itu justru kata kunci pencariannya. "tampilin semua rapat gw": `rapat`
- * nunjukin ini soal jadwal, sekaligus jadi kata yang dicari.
- */
-export function inferKind(ws: readonly string[]): ObjectKind {
-  for (const w of ws) {
-    if (NOUN_SCHEDULE.includes(w)) return "schedule";
-    if (NOUN_TASK.includes(w)) return "task";
-  }
-  return "any";
 }
 
 /**
@@ -259,7 +244,10 @@ export function analyzeWords(ws: readonly string[], now: Date): ChatAnalysis {
 
   return {
     verb: verb ?? fallbackVerb({ kind, question, leftover }),
-    kind: kind === "any" ? inferKind(ws) : kind,
+    // Kata benda kayak "rapat" DULU dipakai nebak jenis (task vs jadwal).
+    // Sekarang jenisnya disatuin, jadi kata itu murni jadi kata kunci /
+    // grup topik — bukan penyempit jenis lagi.
+    kind,
     ...(range ? { range } : {}),
     ...(status ? { status } : {}),
     ...(topic ? { topic } : {}),
