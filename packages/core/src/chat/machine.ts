@@ -409,8 +409,27 @@ function doList(a: ChatAnalysis, ctx: ChatContext, applied: AppliedExpansion[]):
   ];
 
   const prov = R.provenance(applied);
-  const text = R.listResult(res, label, whatOf(a.kind));
+  let text = R.listResult(res, label, whatOf(a.kind));
+
+  // Kosong di jenis yang diminta, tapi jenis satunya ada isinya — sebutin.
+  if (res.total === 0) {
+    const hint = otherKindHint(ctx, filterOf(a), label);
+    if (hint) text = `${text} ${hint}`;
+  }
+
   return result([say(prov ? `${text}\n${prov}` : text, { refs })]);
+}
+
+/**
+ * Berapa banyak yang ketemu kalau jenisnya dibalik. `null` kalau pencarian
+ * memang gak dibatasi jenis, atau jenis satunya juga kosong.
+ */
+function otherKindHint(ctx: ChatContext, filter: QueryFilter, label: string): string | null {
+  if (filter.kind !== "task" && filter.kind !== "schedule") return null;
+  const otherKind = filter.kind === "task" ? "schedule" : "task";
+  const other = queryItems(ctx, { ...filter, kind: otherKind, includeDone: true });
+  if (other.total === 0) return null;
+  return R.otherKindHint(otherKind === "task" ? "task" : "jadwal", other.total, label);
 }
 
 // ── CREATE ───────────────────────────────────────────────────────────────────
@@ -624,21 +643,10 @@ function branchOnResolution(
  * bilang "gak nemu". Kalau di sana ada, sebutin — bukan diem.
  */
 function notFoundMessage(ctx: ChatContext, what: string, filter?: QueryFilter): TurnResult {
-  if (filter && (filter.kind === "task" || filter.kind === "schedule")) {
-    const otherKind = filter.kind === "task" ? "schedule" : "task";
-    const other = queryItems(ctx, { ...filter, kind: otherKind, includeDone: true });
-    if (other.total > 0) {
-      return result([
-        say(
-          R.notFoundButOther(
-            what,
-            otherKind === "task" ? "task" : "jadwal",
-            other.total,
-            filter.range?.label ?? "",
-          ),
-        ),
-      ]);
-    }
+  if (filter) {
+    const label = filter.range?.label ?? "";
+    const hint = otherKindHint(ctx, filter, label);
+    if (hint) return result([say(`Gak ada ${what}${label ? ` ${label}` : ""}. ${hint}`)]);
   }
   return result([say(R.notFound(what))]);
 }

@@ -147,21 +147,6 @@ export function ChatView({
 
   return (
     <div className="flex min-h-[60vh] flex-col">
-      {/* Cuma muncul kalau ada yang bisa dibersihin — tombol yang selalu ada
-          tapi sering gak ngapa-ngapain cuma nambah keramaian. */}
-      {messages.length > 0 && (
-        <div className="mb-3 flex justify-end">
-          <motion.button
-            type="button"
-            whileTap={press}
-            onClick={clear}
-            className="t-num -my-1 py-1 text-[12px] text-ink40 transition-colors duration-[var(--dur-fast)] hover:text-ink"
-          >
-            Bersihkan chat
-          </motion.button>
-        </div>
-      )}
-
       <div className="flex-1 space-y-3">
         <AnimatePresence initial={false}>
           {shown.map((m, i) => (
@@ -184,6 +169,7 @@ export function ChatView({
         onChange={setValue}
         onSubmit={() => send(value)}
         inputRef={inputRef}
+        {...(messages.length > 0 ? { onClear: clear } : {})}
       />
     </div>
   );
@@ -251,14 +237,36 @@ function Composer({
   onChange,
   onSubmit,
   inputRef,
+  onClear,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
   inputRef: React.RefObject<HTMLInputElement>;
+  /** Kosong kalau belum ada yang bisa dibersihin. */
+  onClear?: () => void;
 }) {
   return (
     <div className="sticky bottom-6 mt-6">
+      {/*
+        "Bersihkan chat" ikut di blok sticky ini, BUKAN di atas daftar pesan.
+        Waktu ditaruh di atas, dia ketutup begitu percakapan panjang — persis
+        masalah yang bikin navbar dibikin sticky. Di sini dia selalu
+        kejangkau tanpa perlu scroll ke pucuk.
+      */}
+      {onClear && (
+        <div className="mb-2 flex justify-end">
+          <motion.button
+            type="button"
+            whileTap={press}
+            onClick={onClear}
+            className="t-num rounded-full bg-surface px-3 py-1.5 text-[12px] text-ink40 transition-colors duration-[var(--dur-fast)] hover:text-ink"
+          >
+            Bersihkan chat
+          </motion.button>
+        </div>
+      )}
+
       <div className="card flex items-center gap-3 px-5">
         <span aria-hidden className="t-num text-ink40">
           ›

@@ -668,6 +668,44 @@ describe("titipan teks dari kalender", () => {
   });
 });
 
+/**
+ * Dilaporin dari pemakaian nyata: "tampilin jadwal hari rabu" dijawab "gak
+ * ada" padahal hari itu ada isinya — cuma tersimpan sebagai task, bukan
+ * jadwal. Jawabannya benar secara harfiah tapi bikin app kelihatan rusak.
+ */
+describe("regresi — LIST kosong tapi jenis satunya ada", () => {
+  const tasks = [task("t1", "Kelas pagi", { dueAt: iso(2026, 8, 12, 8, 0) })];
+  const blocks = [block("b1", "Standup", iso(2026, 8, 12, 9, 0), iso(2026, 8, 12, 9, 15))];
+
+  it("nanya jadwal padahal yang ada task → task-nya disebut", () => {
+    const out = textOf(conv({ tasks }).send("tampilin jadwal hari rabu"));
+    expect(out).toContain("Gak ada jadwal Rabu");
+    expect(out).toContain("1 task");
+  });
+
+  it("nanya task padahal yang ada jadwal → jadwalnya disebut", () => {
+    const out = textOf(conv({ blocks }).send("tampilin task hari rabu"));
+    expect(out).toContain("1 jadwal");
+  });
+
+  it("dua-duanya kosong → jangan ngarang petunjuk", () => {
+    const out = textOf(conv().send("tampilin jadwal hari rabu"));
+    expect(out).toContain("Gak ada jadwal Rabu");
+    expect(out).not.toContain("maksudnya itu");
+  });
+
+  it("kalau jenisnya emang ketemu, gak ada embel-embel", () => {
+    const out = textOf(conv({ blocks }).send("tampilin jadwal hari rabu"));
+    expect(out).toContain("Standup");
+    expect(out).not.toContain("maksudnya itu");
+  });
+
+  it("'agenda' gak kena petunjuk ini — dia emang nyari dua-duanya", () => {
+    const out = textOf(conv().send("tampilin agenda hari rabu"));
+    expect(out).not.toContain("maksudnya itu");
+  });
+});
+
 describe("bantuan & fallback", () => {
   it("bantuan nampilin contoh yang bisa dipakai", () => {
     expect(textOf(conv().send("bisa ngapain aja?"))).toContain("tambahin task");

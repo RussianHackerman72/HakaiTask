@@ -106,8 +106,19 @@ export function notFoundButOther(
   count: number,
   label: string,
 ): string {
-  const where = label ? ` ${label}` : "";
-  return `Gak ada ${what}${where}. Tapi ada ${count} ${otherWhat}${where} — maksudnya itu?`;
+  return `Gak ada ${what}${label ? ` ${label}` : ""}. ${otherKindHint(otherWhat, count, label)}`;
+}
+
+/**
+ * Ditempel ke jawaban kosong mana pun, termasuk LIST.
+ *
+ * "tampilin jadwal hari rabu" dijawab "Gak ada jadwal Rabu" itu benar
+ * secara harfiah, tapi nyesatin kalau di hari itu sebenarnya ada task.
+ * User gak mikir dalam kategori "task vs jadwal" — dia cuma tau ada
+ * sesuatu di Rabu.
+ */
+export function otherKindHint(otherWhat: string, count: number, label: string): string {
+  return `Tapi ada ${count} ${otherWhat}${label ? ` ${label}` : ""} — maksudnya itu?`;
 }
 
 export function confirmDelete(refs: readonly Ref[]): string {
