@@ -13,21 +13,31 @@ import { clock, headerDate, isOverdue } from "../lib/format.js";
 import { listContainer, listItem, press, rise } from "../lib/motion.js";
 import { completeTask } from "../lib/tasks.js";
 import { Checkbox, StrikeText } from "./Checkbox.js";
-import { DashboardQuickAdd } from "./DashboardQuickAdd.js";
 
 const HARI_PENDEK = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+
+/** "12 agustus" — bentuk yang langsung dimengerti parser tanggal. */
+const BULAN_PARSER = [
+  "januari", "februari", "maret", "april", "mei", "juni",
+  "juli", "agustus", "september", "oktober", "november", "desember",
+];
+
+function tanggalUntukChat(d: Date): string {
+  return `${d.getDate()} ${BULAN_PARSER[d.getMonth()]}`;
+}
 
 export function CalendarView({
   now,
   tasks,
   blocks,
-  userId,
+  onAdd,
   onOpenTask,
 }: {
   now: Date;
   tasks: Task[];
   blocks: BusyBlock[];
-  userId: string;
+  /** Buka chat dengan teks awal. Kalender gak punya kolom ketik sendiri lagi. */
+  onAdd: (draft: string) => void;
   onOpenTask: (task: Task) => void;
 }) {
   const [viewMonth, setViewMonth] = useState(() => new Date(now.getFullYear(), now.getMonth(), 1));
@@ -121,15 +131,25 @@ export function CalendarView({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-[20px] font-extrabold text-ink">{headerDate(selected)}</h2>
 
-        <DashboardQuickAdd
-          now={now}
-          userId={userId}
-          forcedDate={selected}
-          placeholder="Tambah task"
-        />
+        {/*
+          Kalender gak lagi punya kolom ketik sendiri — semua penambahan lewat
+          chat. Tanggal yang lagi dipilih dititipin sebagai teks awal, jadi
+          user tinggal nulis judulnya dan task-nya mendarat di hari yang bener.
+        */}
+        <motion.button
+          type="button"
+          whileTap={press}
+          onClick={() => onAdd(`tambahin ${tanggalUntukChat(selected)} `)}
+          className="btn-pill shrink-0 py-2 text-[13px]"
+        >
+          + Tambah
+        </motion.button>
+      </div>
+
+      <div className="space-y-4">
 
         {selectedTasks.length === 0 && selectedBlocks.length === 0 ? (
           <p className="text-[15px] font-medium text-ink40">Gak ada apa-apa di tanggal ini.</p>

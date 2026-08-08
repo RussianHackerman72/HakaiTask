@@ -117,6 +117,43 @@ export function inferKind(ws: readonly string[]): ObjectKind {
   return "any";
 }
 
+/**
+ * Semua kata yang dikenal sistem, dari KEDUA kamus, dipecah per kata.
+ *
+ * Dipakai buat mutusin apakah sebuah kata layak ditawarin buat "diajarin".
+ * `leftover` gak bisa dipakai langsung: dia berarti "gak dikonsumsi", bukan
+ * "gak dikenal" — kata topik sengaja dibiarkan utuh biar bisa merangkap jadi
+ * kata kunci. Tanpa pemisahan ini, "tampilin agenda zoom gw" bakal jawab
+ * "belum ngerti zoom" padahal `zoom` ada di kamus bawaan.
+ */
+const KNOWN_WORDS: ReadonlySet<string> = (() => {
+  const out = new Set<string>();
+  const eat = (v: unknown): void => {
+    if (typeof v === "string") {
+      for (const w of v.toLowerCase().split(/\s+/)) if (w) out.add(w);
+      return;
+    }
+    if (Array.isArray(v)) {
+      for (const x of v) eat(x);
+      return;
+    }
+    if (v && typeof v === "object") {
+      for (const [k, x] of Object.entries(v)) {
+        if (k.startsWith("_")) continue; // catatan, bukan kosakata
+        eat(k);
+        eat(x);
+      }
+    }
+  };
+  eat(lex);
+  eat(chatLex);
+  return out;
+})();
+
+export function isKnownWord(w: string): boolean {
+  return KNOWN_WORDS.has(w.toLowerCase());
+}
+
 /** Penanda tanya, termasuk "gak?" di ujung kalimat — khas Indonesia. */
 export function isQuestion(ws: readonly string[]): boolean {
   const tail = ws[ws.length - 1];

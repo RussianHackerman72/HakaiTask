@@ -14,7 +14,7 @@ import { chatTurn, openingMessage, type ChatContext, type Effect, type Pending }
 import { expandBlock } from "./recur.js";
 import { queryItems } from "./query.js";
 import { expandVocab, validateTeach, type VocabEntry } from "./vocab.js";
-import { analyze } from "./intent.js";
+import { analyze, isKnownWord } from "./intent.js";
 import { resolveDateRange } from "./range.js";
 
 const NOW = new Date(2026, 7, 7, 10, 0, 0); // Jumat 7 Agu 2026
@@ -576,6 +576,95 @@ describe("regresi — kebocoran kata ke judul", () => {
     const r = conv().send("tambahin task bikin laporan besok jam 9");
     const e = r.effects[0] as Extract<Effect, { type: "CREATE_FROM_PARSE" }>;
     expect(e.parsed.title).toBe("Bikin laporan");
+  });
+});
+
+describe("regresi — laporan bug 'agenda zoom' & 'semua jadwal'", () => {
+  const blocks = [
+    block("b1", "Zoom sama klien", iso(2026, 8, 10, 10, 0), iso(2026, 8, 10, 11, 0)),
+    block("b2", "Standup pagi", iso(2026, 8, 10, 9, 0), iso(2026, 8, 10, 9, 15)),
+  ];
+
+  it("kata yang ADA di kamus bawaan gak boleh ditawarin buat diajarin", () => {
+    // "zoom" ada di nounSchedule sekaligus grup topik `rapat`
+    expect(isKnownWord("zoom")).toBe(true);
+    expect(isKnownWord("clientan")).toBe(false);
+  });
+
+  it("nyari nama agenda spesifik cuma balikin yang cocok, bukan semua rapat", () => {
+    const out = textOf(conv({ blocks }).send("tampilin semua agenda zoom gw"));
+    expect(out).toContain("Zoom sama klien");
+    expect(out).not.toContain("Standup pagi");
+    expect(out).not.toContain("belum ngerti");
+  });
+
+  it("kata generik tetap nyapu satu kategori", () => {
+    const out = textOf(conv({ blocks }).send("tampilin semua meeting gw"));
+    expect(out).toContain("Zoom sama klien");
+    expect(out).toContain("Standup pagi");
+  });
+
+  it("'semua jadwal' ikut nampilin yang udah lewat", () => {
+    const lewat = [block("b9", "Bangun subuh", iso(2026, 8, 3, 5, 0), iso(2026, 8, 3, 5, 30))];
+    expect(textOf(conv({ blocks: lewat }).send("tampilin semua jadwal gw"))).toContain("Bangun subuh");
+  });
+
+  it("agenda pagi ini tetap kehitung walau ditanya malamnya", () => {
+    const malam = new Date(2026, 7, 7, 22, 0, 0); // Jumat malam
+    const pagi = [block("b8", "Bangun subuh", iso(2026, 8, 7, 5, 0), iso(2026, 8, 7, 5, 30))];
+    const r = chatTurn("tampilin jadwal gw", { ...ctx({ blocks: pagi }), now: malam });
+    expect(textOf(r)).toContain("Bangun subuh");
+  });
+});
+
+describe("regresi — 'rabu besok' itu penekanan, bukan lompat sepekan", () => {
+  it("rabu besok = Rabu terdekat, sama kayak 'rabu'", () => {
+    expect(resolveDateRange("rabu besok", NOW)?.from.getDate()).toBe(
+      resolveDateRange("rabu", NOW)?.from.getDate(),
+    );
+  });
+
+  it("'rabu depan' tetap lompat sepekan", () => {
+    const dekat = resolveDateRange("rabu", NOW)!.from;
+    const depan = resolveDateRange("rabu depan", NOW)!.from;
+    expect(depan.getTime() - dekat.getTime()).toBe(7 * 86_400_000);
+  });
+
+  it("query 'jadwal hari rabu besok' nemu agenda di Rabu terdekat", () => {
+    const blocks = [block("b1", "Kelas pagi", iso(2026, 8, 12, 8, 0), iso(2026, 8, 12, 10, 0))];
+    expect(textOf(conv({ blocks }).send("tampilin jadwal hari rabu besok"))).toContain("Kelas pagi");
+  });
+});
+
+/**
+ * Kalender gak punya kolom ketik lagi — tombolnya nitip teks awal ke chat.
+ * Format tanggalnya harus yang beneran dimengerti parser, kalau enggak
+ * task-nya mendarat di hari yang salah tanpa ada yang sadar.
+ */
+describe("titipan teks dari kalender", () => {
+  it("'tambahin 12 agustus <judul>' mendarat di tanggal yang bener", () => {
+    const r = conv().send("tambahin 12 agustus beli kopi");
+    const e = r.effects[0] as Extract<Effect, { type: "CREATE_FROM_PARSE" }>;
+    expect(e.type).toBe("CREATE_FROM_PARSE");
+    expect(e.parsed.title).toBe("Beli kopi");
+    expect(e.parsed.dueAt?.getDate()).toBe(12);
+    expect(e.parsed.dueAt?.getMonth()).toBe(7); // Agustus
+  });
+
+  it("tiap nama bulan kepakai kebaca parser", () => {
+    const bulan = [
+      "januari", "februari", "maret", "april", "mei", "juni",
+      "juli", "agustus", "september", "oktober", "november", "desember",
+    ];
+    for (const [i, nama] of bulan.entries()) {
+      const r = conv().send(`tambahin 12 ${nama} tes`);
+      const e = r.effects[0] as Extract<Effect, { type: "CREATE_FROM_PARSE" }>;
+      expect(e?.parsed.dueAt?.getMonth(), nama).toBe(i);
+    }
+  });
+
+  it("titipan tanpa judul cuma nanya, gak bikin task kosong", () => {
+    expect(conv().send("tambahin 12 agustus").effects).toHaveLength(0);
   });
 });
 

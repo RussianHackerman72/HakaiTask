@@ -33,6 +33,8 @@ export function ChatView({
   blocks,
   userId,
   userName,
+  draft,
+  onDraftUsed,
   onOpenTask,
 }: {
   now: Date;
@@ -40,6 +42,9 @@ export function ChatView({
   blocks: BusyBlock[];
   userId: string;
   userName: string;
+  /** Titipan teks dari halaman lain (tombol tambah di dashboard/kalender). */
+  draft?: string | null;
+  onDraftUsed?: () => void;
   onOpenTask: (task: Task) => void;
 }) {
   const vocab = useVocab();
@@ -51,6 +56,7 @@ export function ChatView({
   const [lastRange, setLastRange] = useState<DateRange | undefined>(undefined);
   const [value, setValue] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Sapaan pembuka dihitung ulang tiap app dibuka & gak pernah disimpan (§2).
   // Kalau riwayatnya masih hidup, jangan nyapa lagi — user belum ke mana-mana.
@@ -69,6 +75,19 @@ export function ChatView({
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
+
+  // Titipan dari halaman lain: isi kolomnya, taruh kursor di ujung, lalu
+  // lepas titipannya biar gak keisi ulang tiap render.
+  useEffect(() => {
+    if (draft === null || draft === undefined) return;
+    setValue(draft);
+    const el = inputRef.current;
+    if (el) {
+      el.focus();
+      el.setSelectionRange(draft.length, draft.length);
+    }
+    onDraftUsed?.();
+  }, [draft, onDraftUsed]);
 
   const send = useCallback(
     (text: string) => {
@@ -160,7 +179,12 @@ export function ChatView({
         <div ref={endRef} />
       </div>
 
-      <Composer value={value} onChange={setValue} onSubmit={() => send(value)} />
+      <Composer
+        value={value}
+        onChange={setValue}
+        onSubmit={() => send(value)}
+        inputRef={inputRef}
+      />
     </div>
   );
 }
@@ -226,10 +250,12 @@ function Composer({
   value,
   onChange,
   onSubmit,
+  inputRef,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
+  inputRef: React.RefObject<HTMLInputElement>;
 }) {
   return (
     <div className="sticky bottom-6 mt-6">
@@ -238,6 +264,7 @@ function Composer({
           ›
         </span>
         <input
+          ref={inputRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {

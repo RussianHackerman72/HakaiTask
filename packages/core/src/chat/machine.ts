@@ -12,7 +12,13 @@
 import type { BusyBlock, Task } from "../types.js";
 import { parseQuickAdd, type ParseResult } from "../parser/index.js";
 import { greetingSlot } from "../scoring.js";
-import { analyzeWords, type ChatAnalysis, type ObjectKind, type Verb } from "./intent.js";
+import {
+  analyzeWords,
+  isKnownWord,
+  type ChatAnalysis,
+  type ObjectKind,
+  type Verb,
+} from "./intent.js";
 import { findLongest, words } from "./match.js";
 import { queryItems, taskTime, type QueryContext, type QueryFilter } from "./query.js";
 import { expandBlocks } from "./recur.js";
@@ -130,21 +136,24 @@ function whatOf(kind: ObjectKind): string {
   return kind === "task" ? "task" : kind === "schedule" ? "jadwal" : "item";
 }
 
-const TOPIC_GROUPS = chatLex.topicGroups as Record<string, string[]>;
+const TOPIC_GENERIC = chatLex.topicGeneric as Record<string, string[]>;
 
 /**
- * Kata kunci dibuang kalau isinya cuma kata yang MEMBENTUK topiknya sendiri.
+ * Kata kunci dibuang kalau isinya cuma kata GENERIK dari topiknya.
  *
  * "hapus semua meeting minggu ini" → topik `rapat`, kata kunci `meeting`.
- * Kalau dua-duanya dipakai, "Sync tim" ikut topik tapi gugur di kata kunci —
- * jadi cuma separuh hasil yang kena. Topik itu bentuk umum dari kata kuncinya,
- * bukan penyaring tambahan.
+ * Kalau dua-duanya dipakai, "Sync tim" lolos topik tapi gugur di kata kunci,
+ * jadi cuma separuh hasil yang kena.
+ *
+ * Tapi cuma yang GENERIK yang boleh dibuang. Dulu dicek ke seluruh daftar
+ * sinonim, dan itu bikin "tampilin agenda zoom gw" ikut ngebuang "zoom" lalu
+ * nampilin SEMUA rapat — padahal user minta yang Zoom doang.
  */
 function keywordAddsNothing(keyword: string, topic: string | undefined): boolean {
   if (!topic || !keyword) return false;
-  const syn = TOPIC_GROUPS[topic];
-  if (!syn) return false;
-  return words(keyword).every((w) => syn.includes(w));
+  const generic = TOPIC_GENERIC[topic];
+  if (!generic) return false;
+  return words(keyword).every((w) => generic.includes(w));
 }
 
 function filterOf(a: ChatAnalysis): QueryFilter {
@@ -155,6 +164,8 @@ function filterOf(a: ChatAnalysis): QueryFilter {
     ...(a.status ? { status: a.status } : {}),
     ...(a.topic ? { topic: a.topic } : {}),
     ...(a.keyword && !dropKeyword ? { keyword: a.keyword } : {}),
+    // "semua" bikin jendela default jadwal ikut narik yang udah lewat.
+    ...(a.bulk ? { includePast: true } : {}),
   };
 }
 
@@ -382,7 +393,7 @@ function doList(a: ChatAnalysis, ctx: ChatContext, applied: AppliedExpansion[]):
   // siapa pun. Di perintah bikin, kata asing itu judul yang sah, jadi jalur
   // ini emang gak pernah kesampaian dari sana.
   if (res.total === 0) {
-    const unknownTerm = a.leftover.find((w) => w.length >= 4);
+    const unknownTerm = a.leftover.find((w) => w.length >= 4 && !isKnownWord(w));
     if (unknownTerm && applied.length === 0) {
       return result(
         [say(R.offerTeach(unknownTerm, label), { choices: [`ajarin "${unknownTerm}"`, "gak usah"] })],

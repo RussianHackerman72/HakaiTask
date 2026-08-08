@@ -244,9 +244,18 @@ function readDayAnchor(
   return null;
 }
 
-function readWeekModifier(w: string | undefined): "ini" | "depan" | "lalu" | null {
+/**
+ * `tekanan` = kata penegas yang dikonsumsi tapi TIDAK menggeser minggu.
+ *
+ * "rabu besok" itu penekanan ("Rabu, yang besok itu lho"), bukan "Rabu minggu
+ * depan" — persis aturan yang udah dipegang `applyDate()` di parser dan pernah
+ * dibenerin khusus di commit "Benerin bug tanggal 'senin besok'". Sempat
+ * kebalik di sini dan bikin "jadwal hari rabu besok" ngelompat sepekan.
+ */
+function readWeekModifier(w: string | undefined): "ini" | "depan" | "lalu" | "tekanan" | null {
   if (w === "ini") return "ini";
-  if (w === "depan" || w === "besok") return "depan";
+  if (w === "depan") return "depan";
+  if (w === "besok" || w === "nanti") return "tekanan";
   if (w === "lalu" || w === "kemarin" || w === "kemaren") return "lalu";
   return null;
 }
@@ -257,7 +266,9 @@ function readWeekModifier(w: string | undefined): "ini" | "depan" | "lalu" | nul
  * nilai yang dikenal, dua-duanya luput lalu jatuh diam-diam ke `nearest` —
  * "senin depan" jadi sama persis dengan "senin".
  */
-function weekdayMode(mod: "ini" | "depan" | "lalu" | null): "nearest" | "this" | "next" {
+function weekdayMode(
+  mod: "ini" | "depan" | "lalu" | "tekanan" | null,
+): "nearest" | "this" | "next" {
   if (mod === "ini") return "this";
   if (mod === "depan") return "next";
   return "nearest";

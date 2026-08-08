@@ -121,6 +121,16 @@
     "malam": [18, 24]
   },
 
+  "_catatan_generik": "Kata yang berarti SELURUH kategori, bukan satu anggotanya. Bedanya nentuin: 'hapus semua meeting minggu ini' maksudnya semua rapat (jadi kata kuncinya dibuang, biar 'Sync tim' ikut kena), tapi 'tampilin agenda zoom gw' maksudnya yang Zoom doang — kalau kata kuncinya ikut dibuang, semua rapat malah kebawa. Cuma yang terdaftar di sini yang dianggap generik.",
+
+  "topicGeneric": {
+    "rapat": ["rapat", "meeting", "mtg", "mikung", "pertemuan"],
+    "kuliah": ["kuliah", "kelas", "kampus"],
+    "olahraga": ["olahraga", "workout", "latihan"],
+    "medis": ["medis", "periksa"],
+    "sosial": ["sosial"]
+  },
+
   "ordinals": {
     "pertama": 1, "kesatu": 1, "satu": 1,
     "kedua": 2, "dua": 2,

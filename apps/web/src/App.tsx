@@ -6,12 +6,10 @@ import { SignIn, useAuth } from "./components/AuthGate.js";
 import { CalendarView } from "./components/CalendarView.js";
 import { ChatView } from "./components/ChatView.js";
 import { CommandPalette, type Command } from "./components/CommandPalette.js";
-import { DashboardQuickAdd } from "./components/DashboardQuickAdd.js";
 import { DetailSheet } from "./components/DetailSheet.js";
 import { EmptyState } from "./components/EmptyState.js";
 import { FocusCard } from "./components/FocusCard.js";
 import { Header } from "./components/Header.js";
-import { QuickAdd } from "./components/QuickAdd.js";
 import { buildEntries, UpcomingList } from "./components/UpcomingList.js";
 import { useLenis, useNow } from "./lib/hooks.js";
 import type { Page } from "./lib/pages.js";
@@ -72,10 +70,8 @@ function Dashboard({
   const allUpcoming = useFocus(now, 999).upcoming.length;
   const hiddenCount = Math.max(0, allUpcoming - focus.upcoming.length);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [quickAdd, setQuickAdd] = useState<{ open: boolean; initial: string }>({
-    open: false,
-    initial: "",
-  });
+  /** Teks yang dititipkan ke kolom chat saat pindah halaman ke sana. */
+  const [chatDraft, setChatDraft] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -105,10 +101,18 @@ function Dashboard({
     ).length;
   }, [now, tasks]);
 
-  const openQuickAdd = useCallback(
-    (initial = "") => setQuickAdd({ open: true, initial }),
-    [],
-  );
+  /**
+   * Satu-satunya jalan masuk buat nambah apa pun sekarang: chat.
+   *
+   * Kolom ketik di dashboard & kalender dan overlay quick-add dicabut biar
+   * gak ada dua tempat ngetik yang perilakunya beda-beda tipis. Tombol
+   * "tambah" yang masih ada sekarang ngarahin ke sini, bukan buka kolom
+   * sendiri — jadi tetap kelihatan, tanpa jadi input kedua.
+   */
+  const goToChat = useCallback((draft = "") => {
+    setPage("home");
+    setChatDraft(draft);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -125,16 +129,16 @@ function Dashboard({
       }
       if (!typing && (e.key === "n" || e.key === "+")) {
         e.preventDefault();
-        openQuickAdd();
+        goToChat();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openQuickAdd]);
+  }, [goToChat]);
 
   const commands = useMemo<Command[]>(
     () => [
-      { id: "add", label: "Tambah task", hint: "n", run: () => openQuickAdd() },
+      { id: "add", label: "Tambah task", hint: "n", run: () => goToChat("tambahin ") },
       // Sejak halaman jadi tiga, tombol "ganti halaman" yang cuma bolak-balik
       // udah gak cukup — tiap tujuan dikasih perintahnya sendiri.
       ...(page !== "home" ? [{ id: "nav-home", label: "Buka chat", run: () => setPage("home") }] : []),
@@ -147,7 +151,7 @@ function Dashboard({
       { id: "theme", label: "Ganti mode terang/gelap", run: toggleTheme },
       ...(onSignOut ? [{ id: "signout", label: "Keluar", run: onSignOut }] : []),
     ],
-    [openQuickAdd, toggleTheme, onSignOut, page],
+    [goToChat, toggleTheme, onSignOut, page],
   );
 
   // Sebelum store selesai rehydrate, jangan render apa pun: kalau dirender
@@ -192,6 +196,8 @@ function Dashboard({
                 blocks={blocks}
                 userId={userId}
                 userName={name}
+                draft={chatDraft}
+                onDraftUsed={() => setChatDraft(null)}
                 onOpenTask={(task) => setOpenTaskId(task.id)}
               />
             </motion.div>
@@ -200,8 +206,6 @@ function Dashboard({
                tempat basa-basi. Sapaan pindah ke chat. */
             <motion.div key="dashboard" className="mt-10" {...PAGE_ANIM}>
               <div className="space-y-6">
-                <DashboardQuickAdd now={now} userId={userId} />
-
                 {focus.focus ? (
                   <FocusCard
                     task={focus.focus}
@@ -212,7 +216,7 @@ function Dashboard({
                   <EmptyState
                     kind={doneToday > 0 ? "all-done" : "fresh"}
                     doneToday={doneToday}
-                    onAdd={() => openQuickAdd()}
+                    onAdd={() => goToChat("tambahin ")}
                   />
                 )}
 
@@ -232,7 +236,7 @@ function Dashboard({
                 now={now}
                 tasks={tasks}
                 blocks={blocks}
-                userId={userId}
+                onAdd={goToChat}
                 onOpenTask={(task) => setOpenTaskId(task.id)}
               />
             </motion.div>
@@ -242,14 +246,6 @@ function Dashboard({
 
       <DetailSheet task={openTask} now={now} onClose={() => setOpenTaskId(null)} />
 
-      <QuickAdd
-        open={quickAdd.open}
-        now={now}
-        userId={userId}
-        initialValue={quickAdd.initial}
-        onClose={() => setQuickAdd({ open: false, initial: "" })}
-      />
-
       <CommandPalette
         open={paletteOpen}
         tasks={tasks}
@@ -257,7 +253,7 @@ function Dashboard({
         commands={commands}
         onClose={() => setPaletteOpen(false)}
         onOpenTask={(task) => setOpenTaskId(task.id)}
-        onQuickAdd={(initial) => openQuickAdd(initial)}
+        onQuickAdd={(initial) => goToChat(`tambahin ${initial}`)}
       />
     </div>
   );

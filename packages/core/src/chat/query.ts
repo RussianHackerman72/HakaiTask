@@ -8,8 +8,9 @@
  */
 import type { BusyBlock, Task } from "../types.js";
 import chatLex from "./lexicon.chat.id.json" with { type: "json" };
+import { addDays, startOfDay } from "../parser/datetime.js";
 import type { ObjectKind, StatusFilter } from "./intent.js";
-import { inRange, upcomingRange, type DateRange } from "./range.js";
+import { inRange, type DateRange } from "./range.js";
 import { expandBlocks, type Occurrence } from "./recur.js";
 
 const TOPICS = chatLex.topicGroups as Record<string, string[]>;
@@ -32,6 +33,32 @@ export interface QueryFilter {
    * (E12).
    */
   includeDone?: boolean;
+  /** Dipicu kata "semua" — buka jendela default ke masa lalu juga. */
+  includePast?: boolean;
+}
+
+/** Sejauh mana jadwal ditarik kalau user gak nyebut tanggal sama sekali. */
+const DEFAULT_AHEAD_DAYS = 90;
+const DEFAULT_BEHIND_DAYS = 90;
+
+/**
+ * Jendela default buat jadwal.
+ *
+ * Mulainya dari **awal hari ini**, bukan dari detik ini: agenda jam 5 pagi
+ * masih bagian dari "jadwal gw" walaupun ditanya jam 8 malam. Sebelumnya
+ * dipotong dari `now`, dan itu bikin "tampilin semua jadwal gw" jawab kosong
+ * padahal isinya ada — cuma udah lewat beberapa jam.
+ *
+ * Dibatasi 90 hari, bukan tak terhingga, supaya jadwal harian berulang gak
+ * mekar jadi ratusan okurensi cuma buat dihitung lalu dibuang.
+ */
+export function defaultBlockRange(now: Date, includePast = false): DateRange {
+  const today = startOfDay(now);
+  return {
+    from: includePast ? addDays(today, -DEFAULT_BEHIND_DAYS) : today,
+    to: addDays(today, DEFAULT_AHEAD_DAYS),
+    label: "",
+  };
 }
 
 export interface QueryContext {
@@ -136,7 +163,10 @@ export function queryItems(ctx: QueryContext, f: QueryFilter): QueryResult {
   if (wantSchedule) {
     // Jadwal WAJIB lewat ekspansi: tanpa ini yang berulang gak pernah muncul
     // di hari berikutnya (T8).
-    occurrences = expandBlocks(ctx.blocks, range ?? upcomingRange(ctx.now)).filter((o) => {
+    occurrences = expandBlocks(
+      ctx.blocks,
+      range ?? defaultBlockRange(ctx.now, f.includePast),
+    ).filter((o) => {
       if (f.topic && !matchesTopic(o.block.title, f.topic)) return false;
       if (f.keyword && !matchesKeyword({ title: o.block.title }, f.keyword)) return false;
       return true;
