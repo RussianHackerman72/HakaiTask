@@ -1,0 +1,167 @@
+{
+  "_readme": "KAMUS CHAT HAKAITASK — PLAN-CHAT.md §5.2. Kamus ini MELENGKAPI lexicon.id.json, bukan gantiin. Yang di sini khusus kosakata PERINTAH (verba, status, topik, rentang) yang gak dibutuhin quick-add. Aturan sama: semua kunci huruf kecil, nambah kata = nambah satu baris di sini, bukan ngedit logika. Frasa multi-kata ditulis dengan spasi dan SELALU dicocokkan terpanjang-dulu.",
+
+  "_catatan_verba": "Sengaja TIDAK memuat 'jadwal' (di lexicon.id.json dia intent.schedule = bikin jadwal, lihat PLAN-CHAT T3) dan TIDAK memuat 'beresin' (di sana dia nounTask; biar jadi contoh nyata kamus pribadi, PLAN-VOCAB §10.1). Verba penciptaan juga gak ada di sini — jalur CREATE diserahkan ke parseQuickAdd (PLAN-CHAT §5.3).",
+
+  "verbs": {
+    "list": [
+      "tampilin", "tampilkan", "tampil", "nampilin",
+      "lihat", "liat", "liatin", "lihatin", "ngeliat",
+      "tunjukin", "tunjukkan", "kasih lihat", "kasih liat",
+      "cek", "cekin", "ngecek",
+      "cari", "cariin", "nyari", "search", "show", "list"
+    ],
+    "complete": [
+      "selesaiin", "selesaikan", "nyelesaiin",
+      "kelarin", "kelarkan", "ngelarin",
+      "tandain selesai", "tandai selesai", "tandain udah",
+      "centang", "ceklis", "cheklist", "checklist", "ceklist",
+      "complete", "done in"
+    ],
+    "uncomplete": [
+      "batalin selesai", "batalkan selesai", "batalin selesainya",
+      "buka lagi", "bukain lagi", "aktifin lagi",
+      "belum jadi selesai", "uncheck", "undo selesai"
+    ],
+    "reschedule": [
+      "ubah", "ubahin", "ngubah",
+      "ganti", "gantiin", "ngganti",
+      "pindahin", "pindahkan", "pindah",
+      "geser", "geserin", "gesernya",
+      "undur", "undurin", "majuin", "majukan",
+      "tunda", "tundain", "reschedule", "atur ulang", "jadwal ulang"
+    ],
+    "delete": [
+      "hapus", "hapusin", "hapuskan", "ngehapus",
+      "buang", "buangin", "singkirin",
+      "delete", "remove"
+    ],
+    "availability": [
+      "kosong", "luang", "senggang", "sempet", "sempat", "free"
+    ],
+    "help": [
+      "bantuan", "help", "bisa apa", "bisa apa aja", "bisa ngapain",
+      "bisa ngapain aja", "bisa apa aja sih", "perintah", "command",
+      "gimana caranya", "cara pakai"
+    ],
+    "teach": [
+      "ajarin", "ajarkan", "ajari", "ngajarin", "ngajarkan"
+    ]
+  },
+
+  "_catatan_objek": "'vocabulary' sengaja jadi OBJEK, bukan verba tersendiri. Dengan begitu 'tampilin vocabulary gw' dan 'hapus vocabulary clientan' dua-duanya jalan tanpa verba baru — cukup kombinasi verba lama + objek ini (PLAN-CHAT §3: sedikit intent, banyak filter).",
+
+  "objects": {
+    "task": ["task", "tugas", "todo", "to do", "kerjaan", "pekerjaan", "pr"],
+    "schedule": ["jadwal", "schedule", "jadwalku"],
+    "vocab": ["vocabulary", "vocab", "kamus", "kosakata", "istilah"],
+    "any": ["agenda", "kegiatan", "acara", "rencana"]
+  },
+
+  "_catatan_objek_any": "'agenda' TIDAK dimasukkan ke schedule. Waktu dites di browser, 'apa aja agenda gw besok?' cuma balikin jadwal dan diam-diam ngumpetin dua task yang jatuh tempo besok. Padahal orang nanya 'agenda' justru buat lihat SEMUA yang ada di piringnya hari itu. Kata di grup ini tetap dikonsumsi (biar gak jadi kata kunci) tapi gak mempersempit jenis — persis LIST_AGENDA di PLAN-CHAT §3.",
+
+  "_catatan_tanya": "Banyak query natural gak punya verba sama sekali — 'apa aja tugas gw hari ini?', 'besok ada clientan gak?'. Penanda tanya di sini yang bikin kalimat begitu kebaca sebagai LIST, bukan malah jadi task baru. 'gak/ga' di AKHIR kalimat itu penanda tanya khas Indonesia ('besok kosong gak?') dan ditangani terpisah di isQuestion().",
+
+  "questionWords": [
+    "apa", "apa aja", "apa saja", "apaan", "ada apa", "apakah",
+    "adakah", "mana aja", "mana saja", "berapa", "kapan"
+  ],
+
+  "statusWords": {
+    "todo": [
+      "belum selesai", "belum kelar", "belum beres", "belum dikerjain",
+      "belum", "pending", "aktif", "outstanding"
+    ],
+    "done": [
+      "udah selesai", "sudah selesai", "udah kelar", "sudah kelar",
+      "udah beres", "sudah beres", "udah dikerjain", "udah rampung",
+      "selesai", "kelar", "beres", "rampung", "done"
+    ],
+    "overdue": [
+      "telat", "terlambat", "kelewat", "kelewatan", "lewat deadline",
+      "lewat tenggat", "overdue", "kadaluarsa", "expired"
+    ]
+  },
+
+  "_catatan_topik": "Grup topik = pengganti kolom kategori (PLAN-CHAT §7.1, keputusan P7). Kata-katanya sengaja tumpang-tindih sama nounSchedule di lexicon.id.json — di sana buat nebak jenis, di sini buat nyaring.",
+
+  "topicGroups": {
+    "rapat": [
+      "rapat", "meeting", "mikung", "zoom", "gmeet", "google meet",
+      "call", "vc", "standup", "briefing", "brief", "sync", "diskusi",
+      "presentasi", "interview", "wawancara"
+    ],
+    "kuliah": [
+      "kuliah", "kelas", "praktikum", "lab", "responsi", "sidang",
+      "seminar", "webinar", "workshop", "bimbel", "les", "kampus"
+    ],
+    "olahraga": [
+      "gym", "futsal", "lari", "renang", "workout", "sparring",
+      "latihan", "olahraga", "badminton", "basket"
+    ],
+    "medis": [
+      "dokter", "kontrol", "vaksin", "periksa", "checkup", "check up",
+      "medical checkup", "rumah sakit"
+    ],
+    "sosial": [
+      "nongkrong", "ngopi", "kondangan", "undangan", "reuni",
+      "gathering", "nobar", "nonton bareng", "ultah", "ulang tahun"
+    ]
+  },
+
+  "_catatan_daypart": "Kembaran daypart di lexicon.id.json, tapi berupa RENTANG bukan titik — PLAN-CHAT §6.2. Yang di sana buat NENTUIN jam saat bikin ('besok pagi' → 08:00), yang di sini buat NYARING saat query ('agenda besok pagi' → 05:00-11:00). Format: [jam mulai, jam selesai), keduanya di hari yang sama.",
+
+  "daypartRange": {
+    "dini hari": [0, 5],
+    "subuh": [4, 6],
+    "pagi": [5, 11],
+    "siang": [11, 15],
+    "sore": [15, 18],
+    "petang": [17, 19],
+    "malam": [18, 24]
+  },
+
+  "ordinals": {
+    "pertama": 1, "kesatu": 1, "satu": 1,
+    "kedua": 2, "dua": 2,
+    "ketiga": 3, "tiga": 3,
+    "keempat": 4, "empat": 4,
+    "kelima": 5, "lima": 5,
+    "keenam": 6, "enam": 6,
+    "ketujuh": 7, "tujuh": 7,
+    "kedelapan": 8, "delapan": 8
+  },
+
+  "ordinalPrefix": ["nomor", "no", "nomer", "urutan", "yang"],
+
+  "affirm": [
+    "ya", "iya", "iy", "yoi", "yup", "yep", "yes", "gas", "gaskeun",
+    "oke", "ok", "okey", "sip", "siap", "betul", "bener", "boleh",
+    "lanjut", "lanjutkan", "setuju", "simpan"
+  ],
+
+  "deny": [
+    "gak", "ga", "engga", "enggak", "nggak", "ngga", "tidak", "tdk",
+    "jangan", "batal", "batalin", "gajadi", "gak jadi", "ga jadi",
+    "udahlah", "udah lah", "lupain", "cancel", "stop", "no"
+  ],
+
+  "bulkWords": ["semua", "semuanya", "seluruh", "sluruh", "smua", "all"],
+
+  "teachSeparators": ["maksudnya", "artinya", "berarti", "maksudku", "maksud gw", "itu", "="],
+
+  "teachTriggers": ["kalau gw bilang", "kalo gw bilang", "kalau aku bilang", "kalau saya bilang", "kalau gue bilang"],
+
+  "_catatan_reserved": "PLAN-VOCAB §6.3. Kata di sini TIDAK BISA dipakai sebagai frasa kamus pribadi, selamanya. Tiga golongan: verba merusak, meta percakapan (kalau ditimpa, user gak bisa keluar dari konfirmasi), dan inti waktu (salah waktu = kegagalan senyap paling mahal). Nama hari, nama bulan, dan semua token angka juga reserved, tapi dicek lewat kamus lexicon.id.json, bukan didaftar ulang di sini.",
+
+  "reserved": [
+    "hapus", "hapusin", "hapuskan", "buang", "delete", "remove",
+    "ya", "iya", "tidak", "gak", "ga", "enggak", "jangan",
+    "batal", "batalin", "gajadi", "udahlah", "lupain", "cancel",
+    "ajarin", "ajarkan", "ajari",
+    "nomor", "no", "pertama", "kedua", "ketiga",
+    "hari", "besok", "lusa", "kemarin", "minggu", "bulan", "tahun",
+    "tanggal", "jam", "pukul", "ini", "depan", "lalu", "nanti",
+    "pagi", "siang", "sore", "malam", "subuh", "petang"
+  ]
+}

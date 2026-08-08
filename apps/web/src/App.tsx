@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { buildGreeting, type Task } from "@hakaitask/core";
+import type { Task } from "@hakaitask/core";
 import { useKaiStore } from "@hakaitask/core/store";
 import { SignIn, useAuth } from "./components/AuthGate.js";
 import { CalendarView } from "./components/CalendarView.js";
+import { ChatView } from "./components/ChatView.js";
 import { CommandPalette, type Command } from "./components/CommandPalette.js";
 import { DashboardQuickAdd } from "./components/DashboardQuickAdd.js";
 import { DetailSheet } from "./components/DetailSheet.js";
 import { EmptyState } from "./components/EmptyState.js";
 import { FocusCard } from "./components/FocusCard.js";
-import { Greeting } from "./components/Greeting.js";
 import { Header } from "./components/Header.js";
 import { QuickAdd } from "./components/QuickAdd.js";
 import { buildEntries, UpcomingList } from "./components/UpcomingList.js";
@@ -64,7 +64,7 @@ function Dashboard({
   const tasks = useTasks();
   const blocks = useBusyBlocks();
 
-  const [page, setPage] = useState<Page>("dashboard");
+  const [page, setPage] = useState<Page>("home");
   const [showAllUpcoming, setShowAllUpcoming] = useState(false);
 
   // Default 5 biar dashboard tetap ringkas; kalau dibuka, tampilkan semua.
@@ -94,8 +94,6 @@ function Dashboard({
     () => buildEntries(focus.upcoming, blocks, now),
     [focus.upcoming, blocks, now],
   );
-
-  const greeting = buildGreeting(name, focus, now);
 
   // Task yang diselesaikan hari ini — bedain "belum punya task" dari "udah kelar semua".
   const doneToday = useMemo(() => {
@@ -137,11 +135,15 @@ function Dashboard({
   const commands = useMemo<Command[]>(
     () => [
       { id: "add", label: "Tambah task", hint: "n", run: () => openQuickAdd() },
-      {
-        id: "nav",
-        label: page === "dashboard" ? "Buka kalender" : "Buka dashboard",
-        run: () => setPage((p) => (p === "dashboard" ? "calendar" : "dashboard")),
-      },
+      // Sejak halaman jadi tiga, tombol "ganti halaman" yang cuma bolak-balik
+      // udah gak cukup — tiap tujuan dikasih perintahnya sendiri.
+      ...(page !== "home" ? [{ id: "nav-home", label: "Buka chat", run: () => setPage("home") }] : []),
+      ...(page !== "dashboard"
+        ? [{ id: "nav-dash", label: "Buka dashboard", run: () => setPage("dashboard") }]
+        : []),
+      ...(page !== "calendar"
+        ? [{ id: "nav-cal", label: "Buka kalender", run: () => setPage("calendar") }]
+        : []),
       { id: "theme", label: "Ganti mode terang/gelap", run: toggleTheme },
       ...(onSignOut ? [{ id: "signout", label: "Keluar", run: onSignOut }] : []),
     ],
@@ -154,14 +156,26 @@ function Dashboard({
 
   return (
     <div className="min-h-dvh bg-paper">
-      <main className="mx-auto w-full max-w-[var(--max-content)] px-6 pb-32 pt-8">
-        <Header
-          now={now}
-          page={page}
-          onNavigate={setPage}
-          {...(onSignOut ? { onSignOut } : {})}
-        />
+      {/*
+        Navbar nempel di atas biar nav & aksi akun kejangkau tanpa harus
+        scroll balik ke pucuk — chat bisa panjang banget.
 
+        Latarnya SOLID, bukan blur transparan: bahasa desainnya (§7.3) sengaja
+        gak pakai shadow/blur, elevasinya murni dari kontras. z-30 ditaruh di
+        bawah sheet (z-40) & overlay (z-50) supaya gak nutupin keduanya.
+      */}
+      <div className="sticky top-0 z-30 bg-paper">
+        <div className="mx-auto w-full max-w-[var(--max-content)] px-6 py-4">
+          <Header
+            now={now}
+            page={page}
+            onNavigate={setPage}
+            {...(onSignOut ? { onSignOut } : {})}
+          />
+        </div>
+      </div>
+
+      <main className="mx-auto w-full max-w-[var(--max-content)] px-6 pb-32">
         {/*
           Nilai animasinya ditulis eksplisit, BUKAN label variant. Label itu
           merambat ke semua motion descendant (kartu, baris list), jadi exit-nya
@@ -170,13 +184,22 @@ function Dashboard({
           pindah. Objek biasa gak merambat, jadi aman.
         */}
         <AnimatePresence mode="wait">
-          {page === "dashboard" ? (
-            <motion.div key="dashboard" {...PAGE_ANIM}>
-              <div className="mt-10">
-                <Greeting salam={greeting.salam} baris2={greeting.baris2} />
-              </div>
-
-              <div className="mt-8 space-y-6">
+          {page === "home" ? (
+            <motion.div key="home" {...PAGE_ANIM} className="mt-10">
+              <ChatView
+                now={now}
+                tasks={tasks}
+                blocks={blocks}
+                userId={userId}
+                userName={name}
+                onOpenTask={(task) => setOpenTaskId(task.id)}
+              />
+            </motion.div>
+          ) : page === "dashboard" ? (
+            /* Dashboard sengaja tanpa sapaan sekarang (§2) — dia alat, bukan
+               tempat basa-basi. Sapaan pindah ke chat. */
+            <motion.div key="dashboard" className="mt-10" {...PAGE_ANIM}>
+              <div className="space-y-6">
                 <DashboardQuickAdd now={now} userId={userId} />
 
                 {focus.focus ? (

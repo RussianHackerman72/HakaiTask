@@ -28,7 +28,12 @@ export function Header({
     <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
       <div className="t-meta text-ink40">{headerDate(now)}</div>
 
+      {/* Tiga item, tetap pill — keputusan P4. Sidebar itu redesign layout
+          tersendiri, bukan bagian dari pekerjaan chat. */}
       <nav aria-label="Halaman" className="flex gap-1 rounded-full bg-surface p-1">
+        <NavTab active={page === "home"} onClick={() => onNavigate("home")}>
+          Chat
+        </NavTab>
         <NavTab active={page === "dashboard"} onClick={() => onNavigate("dashboard")}>
           Dashboard
         </NavTab>

@@ -6,7 +6,14 @@
  */
 import { create } from "zustand";
 import { persist, createJSONStorage, type StateStorage } from "zustand/middleware";
-import type { BusyBlock, Energy, Project, Task, UserSettings } from "../types.js";
+import type {
+  BusyBlock,
+  Energy,
+  Project,
+  Task,
+  UserLexiconEntry,
+  UserSettings,
+} from "../types.js";
 import { DEFAULT_SETTINGS } from "../types.js";
 import {
   ack,
@@ -24,6 +31,8 @@ export interface KaiState {
   tasks: Record<string, Task>;
   projects: Record<string, Project>;
   busyBlocks: Record<string, BusyBlock>;
+  /** Kamus pribadi, dikunci per `id` (PLAN-VOCAB §8). */
+  lexicon: Record<string, UserLexiconEntry>;
   settings: UserSettings | null;
   fieldTimes: Record<string, Record<string, string>>;
   outbox: OutboxState;
@@ -37,6 +46,11 @@ export interface KaiState {
   mergeRemoteTask: (remote: Task, remoteAt: string) => void;
   upsertBusyBlock: (block: BusyBlock) => void;
   removeBusyBlock: (id: string) => void;
+  /** Terapkan baris jadwal dari server (LWW sederhana per baris). */
+  mergeRemoteBlock: (remote: BusyBlock) => void;
+  upsertLexicon: (entry: UserLexiconEntry) => void;
+  removeLexicon: (id: string) => void;
+  mergeRemoteLexicon: (remote: UserLexiconEntry) => void;
   setSettings: (settings: UserSettings) => void;
   setHydrated: () => void;
   setOnline: (online: boolean) => void;
@@ -88,10 +102,11 @@ function mutation(
   op: Mutation["op"],
   payload: Record<string, unknown>,
   at: string,
+  entity: Mutation["entity"] = "task",
 ): Mutation {
   return {
     id: `${entityId}:${at}:${Math.random().toString(36).slice(2, 8)}`,
-    entity: "task",
+    entity,
     entityId,
     op,
     payload,
@@ -107,6 +122,7 @@ export const useKaiStore = create<KaiState>()(
       tasks: {},
       projects: {},
       busyBlocks: {},
+      lexicon: {},
       settings: null,
       fieldTimes: {},
       outbox: emptyOutbox(),
@@ -189,18 +205,77 @@ export const useKaiStore = create<KaiState>()(
       },
 
       /**
-       * Busy block masih lokal murni — sync-nya nyusul bareng time blocking
-       * di Fase 4 (§6.2). Sengaja gak masuk outbox biar antreannya gak keisi
-       * mutasi yang belum ada penanganannya di sisi kirim.
+       * Jadwal ikut sync sejak keputusan P1 (PLAN-CHAT). Sebelumnya dia lokal
+       * murni — dan itu bikin fitur chat yang berpusat di jadwal jadi setengah
+       * jalan: dibikin di HP, ilang di laptop.
        */
-      upsertBusyBlock: (block) =>
-        set((s) => ({ busyBlocks: { ...s.busyBlocks, [block.id]: block } })),
+      upsertBusyBlock: (block) => {
+        const at = nowIso();
+        const next: BusyBlock = { ...block, updatedAt: at };
+        set((s) => ({
+          busyBlocks: { ...s.busyBlocks, [block.id]: next },
+          outbox: enqueue(
+            s.outbox,
+            mutation(block.id, s.busyBlocks[block.id] ? "update" : "create", { ...next }, at, "busy_block"),
+          ),
+        }));
+      },
 
-      removeBusyBlock: (id) =>
+      /** Tombstone, bukan hapus beneran — alasannya sama seperti task. */
+      removeBusyBlock: (id) => {
+        const at = nowIso();
         set((s) => {
-          const next = { ...s.busyBlocks };
-          delete next[id];
-          return { busyBlocks: next };
+          const current = s.busyBlocks[id];
+          if (!current) return s;
+          return {
+            busyBlocks: { ...s.busyBlocks, [id]: { ...current, deletedAt: at, updatedAt: at } },
+            outbox: enqueue(s.outbox, mutation(id, "delete", { deletedAt: at }, at, "busy_block")),
+          };
+        });
+      },
+
+      /**
+       * Jadwal pakai LWW per BARIS, bukan per field seperti task. Bedanya
+       * disengaja: sebuah blok waktu itu satu kesatuan — `startAt` dan `endAt`
+       * yang nyampur dari dua device bisa bikin jadwal yang berakhir sebelum
+       * dimulai.
+       */
+      mergeRemoteBlock: (remote) =>
+        set((s) => {
+          const local = s.busyBlocks[remote.id];
+          if (local?.updatedAt && remote.updatedAt && local.updatedAt > remote.updatedAt) return s;
+          return { busyBlocks: { ...s.busyBlocks, [remote.id]: remote } };
+        }),
+
+      upsertLexicon: (entry) => {
+        const at = nowIso();
+        const next: UserLexiconEntry = { ...entry, updatedAt: at };
+        set((s) => ({
+          lexicon: { ...s.lexicon, [entry.id]: next },
+          outbox: enqueue(
+            s.outbox,
+            mutation(entry.id, s.lexicon[entry.id] ? "update" : "create", { ...next }, at, "lexicon"),
+          ),
+        }));
+      },
+
+      removeLexicon: (id) => {
+        const at = nowIso();
+        set((s) => {
+          const current = s.lexicon[id];
+          if (!current) return s;
+          return {
+            lexicon: { ...s.lexicon, [id]: { ...current, deletedAt: at, updatedAt: at } },
+            outbox: enqueue(s.outbox, mutation(id, "delete", { deletedAt: at }, at, "lexicon")),
+          };
+        });
+      },
+
+      mergeRemoteLexicon: (remote) =>
+        set((s) => {
+          const local = s.lexicon[remote.id];
+          if (local?.updatedAt && remote.updatedAt && local.updatedAt > remote.updatedAt) return s;
+          return { lexicon: { ...s.lexicon, [remote.id]: remote } };
         }),
 
       setSettings: (settings) => set({ settings }),
@@ -220,6 +295,7 @@ export const useKaiStore = create<KaiState>()(
         tasks: s.tasks,
         projects: s.projects,
         busyBlocks: s.busyBlocks,
+        lexicon: s.lexicon,
         settings: s.settings,
         fieldTimes: s.fieldTimes,
         outbox: s.outbox,

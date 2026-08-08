@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./chat": "./src/chat/index.ts",
     "./parser": "./src/parser/index.ts",
     "./scoring": "./src/scoring.ts",
     "./store": "./src/store/index.ts",

@@ -34,7 +34,12 @@ export function useTasks(): Task[] {
 export function useBusyBlocks(): BusyBlock[] {
   const map = useKaiStore((s) => s.busyBlocks);
   return useMemo(
-    () => Object.values(map).sort((a, b) => a.startAt.localeCompare(b.startAt)),
+    () =>
+      Object.values(map)
+        // Jadwal sekarang dihapus pakai tombstone (biar sync-nya jujur), jadi
+        // yang udah dihapus harus disaring di sini — persis kayak task.
+        .filter((b) => !b.deletedAt)
+        .sort((a, b) => a.startAt.localeCompare(b.startAt)),
     [map],
   );
 }

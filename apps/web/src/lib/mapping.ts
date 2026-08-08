@@ -2,7 +2,7 @@
  * Terjemahan Task (camelCase, core) ↔ baris Postgres (snake_case, §3.2).
  * Satu-satunya tempat nama kolom ditulis — kalau skema berubah, cuma file ini.
  */
-import type { Task } from "@hakaitask/core";
+import type { BusyBlock, Task, UserLexiconEntry } from "@hakaitask/core";
 
 const TO_COLUMN: Record<string, string> = {
   id: "id",
@@ -72,4 +72,57 @@ export function fieldsOf(row: TaskRow): string[] {
   return Object.keys(row)
     .map((c) => TO_FIELD[c])
     .filter((f): f is string => f !== undefined);
+}
+
+// ── busy_blocks ──────────────────────────────────────────────────────────────
+
+export function blockToRow(b: BusyBlock): TaskRow {
+  return {
+    id: b.id,
+    user_id: b.userId,
+    title: b.title,
+    start_at: b.startAt,
+    end_at: b.endAt,
+    recurrence: b.recurrence ?? null,
+    deleted_at: b.deletedAt ?? null,
+  };
+}
+
+export function blockFromRow(row: TaskRow): BusyBlock {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    title: String(row.title ?? ""),
+    startAt: String(row.start_at),
+    endAt: String(row.end_at),
+    ...(row.recurrence ? { recurrence: String(row.recurrence) } : {}),
+    ...(row.updated_at ? { updatedAt: String(row.updated_at) } : {}),
+    ...(row.deleted_at ? { deletedAt: String(row.deleted_at) } : {}),
+  };
+}
+
+// ── user_lexicon ─────────────────────────────────────────────────────────────
+
+export function lexiconToRow(e: UserLexiconEntry): TaskRow {
+  return {
+    id: e.id,
+    user_id: e.userId,
+    dari: e.dari,
+    ke: e.ke,
+    tipe: e.tipe,
+    deleted_at: e.deletedAt ?? null,
+  };
+}
+
+export function lexiconFromRow(row: TaskRow): UserLexiconEntry {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    dari: String(row.dari ?? ""),
+    ke: String(row.ke ?? ""),
+    tipe: (row.tipe as UserLexiconEntry["tipe"]) ?? "alias",
+    createdAt: String(row.created_at ?? new Date().toISOString()),
+    ...(row.updated_at ? { updatedAt: String(row.updated_at) } : {}),
+    ...(row.deleted_at ? { deletedAt: String(row.deleted_at) } : {}),
+  };
 }

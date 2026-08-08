@@ -8,7 +8,13 @@
 import type { ISODate } from "../types.js";
 
 export type MutationOp = "create" | "update" | "delete";
-export type EntityKind = "task" | "project" | "busy_block" | "settings" | "focus_session";
+export type EntityKind =
+  | "task"
+  | "project"
+  | "busy_block"
+  | "lexicon"
+  | "settings"
+  | "focus_session";
 
 export interface Mutation<T = Record<string, unknown>> {
   id: string;

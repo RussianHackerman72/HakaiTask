@@ -83,6 +83,9 @@ export interface BusyBlock {
   startAt: ISODate;
   endAt: ISODate;
   recurrence?: string;
+  updatedAt?: ISODate;
+  /** Tombstone — alasannya sama seperti task: hapus di HP gak boleh "hidup lagi". */
+  deletedAt?: ISODate;
 }
 
 export interface FocusSession {
@@ -137,14 +140,22 @@ export const DEFAULT_SETTINGS: Omit<UserSettings, "userId"> = {
   estimateMultiplier: 1.0,
 };
 
-/** Entri kamus pribadi hasil "Ajarin" dari user (§6.1.7). */
+/**
+ * Entri kamus pribadi (§6.1.7 & PLAN-VOCAB).
+ *
+ * `dari` → `ke` itu ekspansi teks, bukan aturan: "clientan" → "meeting
+ * client". Nama kolom sengaja dipertahankan dari skema awal — ganti nama cuma
+ * bikin migrasi tanpa manfaat (PLAN-VOCAB §8.1).
+ */
 export interface UserLexiconEntry {
   id: string;
   userId: string;
   dari: string;
   ke: string;
-  tipe: "slang" | "niat" | "partikel" | "buang";
+  tipe: "alias" | "aksi" | "filter" | "slang" | "buang";
   createdAt: ISODate;
+  updatedAt?: ISODate;
+  deletedAt?: ISODate;
 }
 
 /** Task baru dengan nilai default yang wajar. */
