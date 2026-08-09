@@ -52,6 +52,7 @@ begini yang diam-diam bikin task berjudul "Makasih".
 
 | | |
 |---|---|
+| [Masalah yang dipecahkan](#masalah-yang-dipecahkan) | Enam situasi nyata yang bikin app ini ada |
 | [Dibanding app sejenis](#dibanding-app-sejenis) | Kenapa ini, bukan Todoist / TickTick / Notion |
 | [Kenapa pakai ini](#kenapa-pakai-ini) | Empat alasan yang bukan basa-basi |
 | [Fitur](#fitur) | Apa aja yang bisa dilakukan |
@@ -59,8 +60,110 @@ begini yang diam-diam bikin task berjudul "Makasih".
 | [Kamus pribadi](#kamus-pribadi) | Ngajarin istilah kamu sendiri |
 | [Mulai pakai](#mulai-pakai) | Jalanin di komputer sendiri |
 | [Cara kerjanya](#cara-kerjanya) | Arsitektur & alur data |
-| [Masalah yang dipecahkan](#masalah-yang-dipecahkan) | Bug nyata & pelajarannya |
+| [Catatan lapangan](#catatan-lapangan) | Bug nyata & aturan yang lahir darinya |
 | [Status](#status-apa-yang-udah-jadi) | Yang udah jadi vs belum |
+
+---
+
+## Masalah yang dipecahkan
+
+Bukan "task manager kurang satu lagi". Ini enam situasi yang bikin app ini ada.
+
+### 1. Ide datang pas tangan lagi penuh
+
+> **Situasi.** Kamu lagi di angkot. Dosen barusan nyebut deadline. Atau kamu baru
+> keluar dari ruang meeting sambil jalan.
+>
+> **Yang biasanya terjadi.** Buka app → tombol `+` → ketik judul → buka pemilih
+> tanggal → gulir bulan → pilih tanggal → buka pemilih jam → pilih jam → simpan.
+> Delapan ketukan, belasan detik, dan dua tangan. Kalau lagi buru-buru,
+> **gak jadi dicatat.** Yang gak dicatat, dilupain.
+>
+> **Di sini.** Satu kalimat, satu Enter, di bawah lima detik:
+> `ingetin bayar ukt jumat jam 9`
+
+Ini masalah paling mendasarnya. Task manager gagal bukan karena fiturnya kurang,
+tapi karena **biaya nyatatnya lebih mahal daripada risiko lupa** — jadi kamu
+milih lupa.
+
+### 2. Kamu harus mikir dua kali
+
+> **Situasi.** Di kepala kamu sudah utuh: *"lusa sore ngopi sama Arko"*.
+>
+> **Yang biasanya terjadi.** Kalimat itu harus kamu bongkar sendiri jadi
+> potongan-potongan yang dimengerti app: judul di sini, tanggal di kalender,
+> jam di dropdown. Kamu mikir sekali buat isinya, lalu mikir lagi buat
+> menerjemahkannya.
+>
+> **Di sini.** Tulis persis seperti yang kamu pikirkan. Yang menerjemahkan
+> app-nya, bukan kamu.
+
+Beban tiap kejadiannya kecil — dua detik, sedikit gesekan. Tapi dikali sepuluh
+kali sehari, itu yang bikin orang berhenti pakai.
+
+### 3. Sinyal hilang tepat di momen paling sering dipakai
+
+> **Situasi.** Lift, basement parkir, angkot, kampus jam sibuk, atau kuota habis
+> di tanggal tua.
+>
+> **Yang biasanya terjadi.** Aplikasi berbasis web muter-muter, centang gak
+> masuk, atau yang kamu ketik hilang waktu halaman dimuat ulang.
+>
+> **Di sini.** Nyentang dan nambah task **gak pernah** nunggu jaringan. Semuanya
+> ditulis lokal dulu; sinkronisasi nyusul sendiri begitu online. Kalau kamu edit
+> di HP dan di laptop sekaligus, dua-duanya selamat — konfliknya diselesaikan
+> per field, bukan per baris.
+
+### 4. Daftar 40 task bikin lumpuh, bukan produktif
+
+> **Situasi.** Kamu buka app buat mulai kerja, terus lihat 40 baris.
+>
+> **Yang biasanya terjadi.** Lima menit habis buat mutusin mau mulai dari mana,
+> dan kamu keluar tanpa ngerjain apa pun.
+>
+> **Di sini.** Dashboard menjawab **"apa sekarang?"**, bukan "apa aja yang ada?".
+> Satu Focus Card, dipilih otomatis dari gabungan tenggat, prioritas, dan energi
+> waktu itu. Sisanya diringkas jadi "Berikutnya".
+
+### 5. "Besok jam 3 gue bisa gak, ya?"
+
+> **Situasi.** Ada yang ngajak ketemu, dan kamu harus jawab sekarang.
+>
+> **Yang biasanya terjadi.** Buka kalender, cari tanggalnya, gulir ke jam 3,
+> pindai satu-satu, baru jawab. Sambil ngobrol, sambil diliatin.
+>
+> **Di sini.** `besok jam 3 gw kosong ga?` — dijawab langsung, sekalian disebut
+> agenda yang bentrok kalau ada. Task tanpa jam gak dianggap bikin kamu sibuk
+> seharian.
+
+### 6. Bahasa kamu bukan bahasa app
+
+> **Situasi.** Kamu nyebutnya "dismath", "responsi", "clientan", "kondangan",
+> "ngelab". Bukan "Discrete Mathematics — Lecture".
+>
+> **Yang biasanya terjadi.** Kamu yang menyesuaikan diri: bikin label, bikin
+> filter tersimpan, atau nulis panjang tiap kali biar app-nya ngerti.
+>
+> **Di sini.** Ajarin sekali, dipakai selamanya:
+> `kalau gw bilang clientan, maksudnya meeting client`
+>
+> Bukan model yang menebak — satu baris pemetaan yang bisa kamu baca, ubah, dan
+> hapus kapan pun.
+
+<details>
+<summary><b>Dan satu lagi: jadwal itu urusan pribadi</b></summary>
+
+<br>
+
+Isi task kamu bukan data netral. Di situ ada nama klien, jadwal kontrol ke
+dokter, urusan keluarga, deadline yang belum kamu kasih tau siapa-siapa.
+
+Karena parsingnya gak pakai AI, **kalimat kamu gak pernah dikirim ke server siapa
+pun buat "dimengerti"**. Yang tersimpan cuma hasil akhirnya, di database Supabase
+milik kamu sendiri, dilindungi Row Level Security. Bukan janji kebijakan privasi
+— memang gak ada jalur teknisnya buat keluar.
+
+</details>
 
 ---
 
@@ -615,11 +718,12 @@ dan kenapa — bagian yang biasanya hilang begitu kode ditulis.
 
 ---
 
-## Masalah yang dipecahkan
+## Catatan lapangan
 
-Semua di bawah ini **beneran kejadian** waktu dipakai, bukan skenario karangan.
-Ditulis di sini karena pola kegagalannya lebih berguna daripada daftar fiturnya —
-dan karena tiap satu meninggalkan aturan yang sekarang dijaga tes.
+Bagian ini buat yang penasaran sama isi mesinnya. Semua di bawah ini **bug yang
+beneran kejadian** waktu dipakai, bukan skenario karangan. Ditulis karena pola
+kegagalannya lebih berguna daripada daftar fiturnya — dan karena tiap satu
+meninggalkan aturan yang sekarang dijaga tes.
 
 <details open>
 <summary><b>Ketika sistem terlalu percaya diri</b></summary>
