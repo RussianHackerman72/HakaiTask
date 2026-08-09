@@ -613,22 +613,26 @@ function doReschedule(a: ChatAnalysis, ws: readonly string[], ctx: ChatContext):
   let when: { to?: DateRange; toClock?: { h: number; m: number } } = {};
   let filterRange: DateRange | undefined;
 
+  let filter: QueryFilter;
+
   if (split >= 0) {
     // "pindahin rapat senin ke selasa" — sebelum `ke` nyaring, sesudahnya tujuan
     when = readWhen(ws.slice(split + 1), ctx.now) ?? {};
-    filterRange = findFirstRange(ws.slice(0, split), ctx.now)?.range;
+
+    // Penyaringnya dianalisis ULANG dari potongan SEBELUM `ke`/`jadi` doang.
+    // Kalau pakai analisis kalimat utuh, kata tujuannya ikut jadi kata kunci:
+    // "ubah task laporan jadi jam 9" nyarinya "laporan jadi jam 9", dan
+    // "Bikin laporan" gak akan pernah ketemu.
+    filter = { ...filterOf(analyzeWords(ws.slice(0, split), ctx.now)), includeDone: true };
   } else {
     // Tanpa `ke`/`jadi`, waktu yang disebut itu PENYARING, bukan tujuan:
     // "ubah meeting gw besok" artinya "meeting yang besok", dan tujuannya
     // belum disebut sama sekali — jadi harus ditanya (§8.3).
     filterRange = a.range;
+    filter = { ...filterOf(a), includeDone: true };
+    delete filter.range;
+    if (filterRange) filter.range = filterRange;
   }
-
-  // Rentang tujuan gak boleh ikut nyaring — kalau "ke selasa" dipakai nyari,
-  // yang ketemu malah agenda hari Selasa yang justru mau dituju.
-  const filter: QueryFilter = { ...filterOf(a), includeDone: true };
-  delete filter.range;
-  if (filterRange) filter.range = filterRange;
 
   const res = resolveTarget(ctx, filter);
   return branchOnResolution(res, { verb: "reschedule", ...when }, ctx, whatOf(a.kind), filter);
