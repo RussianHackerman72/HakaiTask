@@ -28,17 +28,45 @@ export type Verb =
   | "availability"
   | "help"
   | "teach"
+  /** Basa-basi ("makasih", "sip") — dijawab pendek, gak ninggalin jejak. */
+  | "chitchat"
+  /** Kelihatan kayak judul tapi gak ada aba-aba bikin — tanya dulu. */
+  | "maybeCreate"
   | "unknown";
 
 export type ObjectKind = "task" | "schedule" | "vocab" | "any";
 export type StatusFilter = "todo" | "done" | "overdue";
 
-const VERBS = chatLex.verbs as Record<Exclude<Verb, "create" | "unknown" | "any">, string[]>;
+const VERBS = chatLex.verbs as Record<
+  Exclude<Verb, "create" | "maybeCreate" | "chitchat" | "unknown">,
+  string[]
+>;
 const OBJECTS = chatLex.objects as Record<"any" | "vocab", string[]>;
 const STATUS = chatLex.statusWords as Record<StatusFilter, string[]>;
 const TOPICS = chatLex.topicGroups as Record<string, string[]>;
 const QUESTION = chatLex.questionWords as string[];
 const BULK = chatLex.bulkWords as string[];
+const SOCIAL = chatLex.social as string[];
+const THANKS = chatLex.thanks as string[];
+const AFFIRM = chatLex.affirm as string[];
+const DENY = chatLex.deny as string[];
+
+/** Kata yang, kalau berdiri sendirian, gak minta apa-apa dari sistem. */
+const NO_OP_WORDS = new Set([...SOCIAL, ...AFFIRM, ...DENY].flatMap((w) => w.split(" ")));
+
+/** Aba-aba bikin yang eksplisit: "tambahin", "bikin", "jadwalin", "ingetin". */
+const CREATE_WORDS = new Set(
+  [
+    ...(lex.intent.neutral as string[]),
+    ...(lex.intent.schedule as string[]),
+    ...(lex.intent.remind as string[]),
+  ].flatMap((w) => w.split(" ")),
+);
+
+export function isThanks(ws: readonly string[]): boolean {
+  const flat = new Set(THANKS.flatMap((w) => w.split(" ")));
+  return ws.some((w) => flat.has(w));
+}
 
 /**
  * Kata sisa yang gak layak jadi kata kunci pencarian.
@@ -243,7 +271,15 @@ export function analyzeWords(ws: readonly string[], now: Date): ChatAnalysis {
   const keyword = leftover.join(" ");
 
   return {
-    verb: verb ?? fallbackVerb({ kind, question, leftover }),
+    verb:
+      verb ??
+      fallbackVerb({
+        kind,
+        question,
+        leftover,
+        hasDate: range !== undefined,
+        hasCreateWord: ws.some((w) => CREATE_WORDS.has(w)),
+      }),
     // Kata benda kayak "rapat" DULU dipakai nebak jenis (task vs jadwal).
     // Sekarang jenisnya disatuin, jadi kata itu murni jadi kata kunci /
     // grup topik — bukan penyempit jenis lagi.
@@ -260,18 +296,26 @@ export function analyzeWords(ws: readonly string[], now: Date): ChatAnalysis {
 
 /**
  * Kalau gak ada verba sama sekali. Aturan aman §1.3: **kalau ragu, pilih baca.**
- * Salah-baca cuma bikin daftar yang gak kepake; salah-tulis bikin data kotor
- * yang harus dibersihin user.
+ *
+ * Dulu di sini langsung balik "create", dan itu ngelanggar aturannya sendiri:
+ * bikin task itu MUTASI, dan mutasi kejadian diam-diam cuma karena kalimatnya
+ * nyisain kata. Akibatnya "ok terimakasih" kesimpen jadi task berjudul
+ * "Terimakasih". Sekarang bikin cuma otomatis kalau ada aba-abanya —
+ * kata perintah ("tambahin") atau waktu ("besok jam 9"). Selain itu: ditanya.
  */
-function fallbackVerb(ctx: {
+function fallbackVerb(c: {
   kind: ObjectKind;
   question: boolean;
   leftover: string[];
+  hasDate: boolean;
+  hasCreateWord: boolean;
 }): Verb {
-  if (ctx.question) return "list";
-  if (ctx.kind === "vocab") return "list";
+  if (c.question) return "list";
+  if (c.kind === "vocab") return "list";
   // Cuma nulis waktu doang ("besok") — gak ada bahan buat judul, jadi ini
   // pertanyaan, bukan perintah bikin (E16)
-  if (ctx.leftover.length === 0) return "list";
-  return "create";
+  if (c.leftover.length === 0) return "list";
+  if (c.leftover.every((w) => NO_OP_WORDS.has(w))) return "chitchat";
+  if (c.hasCreateWord || c.hasDate) return "create";
+  return "maybeCreate";
 }

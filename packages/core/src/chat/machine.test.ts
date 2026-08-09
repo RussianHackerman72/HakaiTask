@@ -564,7 +564,7 @@ describe("regresi — kebocoran kata ke judul", () => {
   it("angka telanjang gak jadi task — biasanya ketikan nyasar / ordinal telat", () => {
     const r = conv().send("1");
     expect(r.effects).toHaveLength(0);
-    expect(textOf(r)).toContain("Mau nambahin apa");
+    expect(textOf(r)).toContain("belum bisa itu");
   });
 
   it("angka yang nempel huruf tetap judul yang sah", () => {
@@ -708,6 +708,64 @@ describe("regresi — task & jadwal disatuin", () => {
     const e = dibikin.effects[0] as Extract<Effect, { type: "CREATE_FROM_PARSE" }>;
     const dibuat = task("baru", e.parsed.title, { dueAt: e.parsed.dueAt!.toISOString() });
     expect(textOf(conv({ tasks: [dibuat] }).send("tampilin task besok"))).toContain(e.parsed.title);
+  });
+});
+
+/**
+ * Dilaporin dari layar asli: "ok terimakasih" kesimpen jadi task berjudul
+ * "Terimakasih". Bikin itu MUTASI — gak boleh kejadian cuma gara-gara
+ * kalimatnya nyisain kata.
+ */
+describe("regresi — basa-basi gak boleh jadi task", () => {
+  it("'ok terimakasih' dijawab pendek, nol efek", () => {
+    const r = conv().send("ok terimakasih");
+    expect(r.effects).toHaveLength(0);
+    expect(textOf(r)).toBe("Sama-sama.");
+  });
+
+  it("sapaan & seruan juga gak ninggalin jejak", () => {
+    for (const s of ["halo", "sip", "mantap", "wkwk", "makasih ya"]) {
+      const r = conv().send(s);
+      expect(r.effects, s).toHaveLength(0);
+    }
+  });
+
+  it("kalimat tanpa aba-aba ditanya dulu, gak langsung disimpen", () => {
+    const c = conv();
+    const r = c.send("beli kopi");
+    expect(r.effects).toHaveLength(0);
+    expect(textOf(r)).toContain("Mau gue simpen");
+    expect(textOf(r)).toContain("Beli kopi");
+    expect(c.pending?.kind).toBe("confirmCreate");
+  });
+
+  it("dijawab 'ya' baru kesimpen", () => {
+    const c = conv();
+    c.send("beli kopi");
+    expect(c.send("ya").effects[0]!.type).toBe("CREATE_FROM_PARSE");
+  });
+
+  it("dijawab 'batal' gak nyimpen apa pun", () => {
+    const c = conv();
+    c.send("beli kopi");
+    expect(c.send("batal").effects).toHaveLength(0);
+  });
+
+  it("ada aba-aba bikin → langsung jalan, gak usah ditanya", () => {
+    expect(conv().send("tambahin beli kopi").effects[0]!.type).toBe("CREATE_FROM_PARSE");
+  });
+
+  it("ada waktu → juga langsung jalan, waktunya itu aba-abanya", () => {
+    expect(conv().send("beli kopi besok jam 9").effects[0]!.type).toBe("CREATE_FROM_PARSE");
+  });
+
+  it("titipan dari kalender tetap langsung jalan", () => {
+    expect(conv().send("tambahin 12 agustus beli kopi").effects[0]!.type).toBe("CREATE_FROM_PARSE");
+  });
+
+  it("pertanyaan tetap kebaca query, bukan tawaran nyimpen", () => {
+    expect(conv().send("apa aja task gw hari ini?").effects).toHaveLength(0);
+    expect(textOf(conv().send("apa aja task gw hari ini?"))).not.toContain("Mau gue simpen");
   });
 });
 

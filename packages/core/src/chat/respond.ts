@@ -171,6 +171,22 @@ export function askTitle(): string {
   return "Mau nambahin apa? Kasih judulnya ya.";
 }
 
+/**
+ * Basa-basi dijawab pendek dan berhenti di situ.
+ *
+ * Sengaja gak ngajak ngobrol lanjut ("ada lagi yang bisa dibantu?"): chat ini
+ * alat, bukan asisten (§1). Yang penting cuma satu — kalimat sopan gak boleh
+ * ninggalin jejak apa pun di data.
+ */
+export function chitchat(thanks: boolean): string {
+  return thanks ? "Sama-sama." : "Sip.";
+}
+
+/** Kelihatan kayak judul, tapi gak ada aba-aba bikin. Tanya dulu. */
+export function askConfirmCreate(title: string): string {
+  return `Mau gue simpen "${title}" jadi task? (ya / batal)`;
+}
+
 // ── ketersediaan ─────────────────────────────────────────────────────────────
 
 export function freeAt(label: string): string {

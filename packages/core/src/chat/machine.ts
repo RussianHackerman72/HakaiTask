@@ -15,6 +15,7 @@ import { greetingSlot } from "../scoring.js";
 import {
   analyzeWords,
   isKnownWord,
+  isThanks,
   type ChatAnalysis,
   type ObjectKind,
   type Verb,
@@ -88,6 +89,8 @@ export type Pending =
   | { kind: "undo"; refs: Ref[]; at: number }
   | { kind: "teach"; step: "phrase" | "meaning" | "confirm"; phrase?: string; meaning?: string; at: number }
   | { kind: "offerTeach"; term: string; at: number }
+  /** Kalimat yang kelihatan kayak judul tapi tanpa aba-aba bikin. */
+  | { kind: "confirmCreate"; input: string; at: number }
   | null;
 
 export interface ChatContext extends QueryContext {
@@ -291,9 +294,33 @@ function route(
       return doAvailability(a, expanded, ctx);
     case "help":
       return result([say(R.help())]);
+    case "chitchat":
+      return result([say(R.chitchat(isThanks(expanded)))]);
+    case "maybeCreate":
+      return doMaybeCreate(input, ctx);
     default:
       return result([say(R.unknown())]);
   }
+}
+
+/**
+ * Bikin task, tapi minta izin dulu.
+ *
+ * Dipakai buat kalimat yang gak punya aba-aba apa pun — bukan pertanyaan,
+ * bukan basa-basi, dan gak nyebut waktu. "beli kopi" kemungkinan besar emang
+ * mau disimpen, tapi "yg bener aje" jelas enggak, dan sistem gak punya cara
+ * mbedain keduanya tanpa nebak. Jadi jangan nebak: tanya.
+ */
+function doMaybeCreate(input: string, ctx: ChatContext): TurnResult {
+  const preview = parseQuickAdd(input, { now: ctx.now });
+  const title = cleanTitle(preview.title, (preview.startAt ?? preview.dueAt) !== undefined);
+  if (!/\p{L}/u.test(title)) return result([say(R.unknown())]);
+
+  return result([say(R.askConfirmCreate(title), { choices: ["ya", "batal"] })], [], {
+    kind: "confirmCreate",
+    input,
+    at: ctx.now.getTime(),
+  });
 }
 
 // ── pending ──────────────────────────────────────────────────────────────────
@@ -331,6 +358,12 @@ function handlePending(ws: readonly string[], p: Pending, ctx: ChatContext): Tur
       }
       return result([say(R.restored(p.refs))], effects);
     }
+    return null;
+  }
+
+  if (p.kind === "confirmCreate") {
+    if (isDeny(ws)) return result([say("Oke, gak jadi.")]);
+    if (isAffirm(ws)) return doCreate(p.input, ctx);
     return null;
   }
 

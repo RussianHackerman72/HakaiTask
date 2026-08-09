@@ -160,6 +160,21 @@
 
   "bulkWords": ["semua", "semuanya", "seluruh", "sluruh", "smua", "all"],
 
+  "_catatan_basa_basi": "Kalimat sopan-santun yang HARUS gak ninggalin jejak apa pun. 'ok terimakasih' sempat kesimpen jadi task berjudul 'Terimakasih' — bikin itu mutasi, dan mutasi gak boleh kejadian gara-gara user berterima kasih. Chat ini alat, bukan asisten: balasannya sengaja pendek dan gak ngajak ngobrol lebih jauh.",
+
+  "social": [
+    "terimakasih", "terima kasih", "makasih", "makasi", "mkasih", "trims",
+    "thanks", "thank you", "thx", "tengkyu",
+    "halo", "hai", "hi", "hello", "hey", "woi",
+    "mantap", "keren", "asik", "asyik", "nice", "wkwk", "wkwkwk", "haha",
+    "hehe", "gpp", "gapapa", "noted", "sip", "sipp", "mantul"
+  ],
+
+  "thanks": [
+    "terimakasih", "terima kasih", "makasih", "makasi", "mkasih", "trims",
+    "thanks", "thank you", "thx", "tengkyu"
+  ],
+
   "teachSeparators": ["maksudnya", "artinya", "berarti", "maksudku", "maksud gw", "itu", "="],
 
   "teachTriggers": ["kalau gw bilang", "kalo gw bilang", "kalau aku bilang", "kalau saya bilang", "kalau gue bilang"],
