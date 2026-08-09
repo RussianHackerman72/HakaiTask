@@ -52,13 +52,91 @@ begini yang diam-diam bikin task berjudul "Makasih".
 
 | | |
 |---|---|
+| [Dibanding app sejenis](#dibanding-app-sejenis) | Kenapa ini, bukan Todoist / TickTick / Notion |
 | [Kenapa pakai ini](#kenapa-pakai-ini) | Empat alasan yang bukan basa-basi |
 | [Fitur](#fitur) | Apa aja yang bisa dilakukan |
 | [Contekan perintah](#contekan-perintah) | Tabel lengkap semua perintah |
 | [Kamus pribadi](#kamus-pribadi) | Ngajarin istilah kamu sendiri |
 | [Mulai pakai](#mulai-pakai) | Jalanin di komputer sendiri |
 | [Cara kerjanya](#cara-kerjanya) | Arsitektur & alur data |
+| [Masalah yang dipecahkan](#masalah-yang-dipecahkan) | Bug nyata & pelajarannya |
 | [Status](#status-apa-yang-udah-jadi) | Yang udah jadi vs belum |
+
+---
+
+## Dibanding app sejenis
+
+Jangan percaya klaim di README. **Buka app to-do yang kamu pakai sekarang, coba
+empat hal ini.**
+
+### Tes 1 — ketik kalimat Indonesia apa adanya
+
+```
+lusa jam 3an ngopi sama arko
+```
+
+Di kebanyakan app, seluruh kalimat itu jadi **judul task**, dan tanggalnya
+gak kebaca. Bukan karena app-nya jelek — parsing bahasa alaminya memang dibikin
+buat bahasa Inggris. `next tuesday 3pm` jalan mulus; `lusa jam 3an` enggak.
+
+Di HaKaiTask: judul **Ngopi sama arko**, tanggal **lusa**, jam **15:00**,
+ditandai perkiraan karena kamu nulis "3an".
+
+### Tes 2 — ajarin dia istilah kamu sendiri
+
+Kamu bilang "clientan" buat meeting sama klien. Coba ajarin app-mu.
+
+Hampir pasti gak bisa. Yang ada cuma label, tag, atau filter tersimpan — kamu
+tetap harus ngomong pakai bahasa app-nya. HaKaiTask kebalikannya: **app-nya yang
+belajar bahasa kamu**, sekali ketik, permanen, dan bisa kamu baca ulang kapan pun
+sebagai satu baris `clientan → meeting client`.
+
+### Tes 3 — matiin internet, terus pakai
+
+Centang 5 task, tambah 2, hapus 1. Ada yang gagal? Ada yang muncul lagi setelah
+online? Di HaKaiTask, nulis **gak pernah** nunggu jaringan — semua masuk lokal
+dulu, antrean sync nyusul, dan konflik diselesaikan per field jadi editan dari
+dua device gak saling makan.
+
+### Tes 4 — kalau dia salah baca, kamu bisa betulin?
+
+Ini yang paling menentukan. Di app ber-AI atau parser tertutup, salah baca cuma
+bisa dilaporkan lalu ditunggu. Di sini kamusnya **file JSON biasa** — nambah satu
+baris, dan salahnya hilang selamanya di semua device kamu.
+
+<details>
+<summary><b>Ringkasnya dalam tabel</b></summary>
+
+<br>
+
+| | HaKaiTask | App to-do pada umumnya |
+|---|---|---|
+| Input bahasa Indonesia sehari-hari | Inti produknya | Umumnya jadi judul polos |
+| Slang & singkatan pribadi | Bisa diajarin, permanen | Gak ada konsepnya |
+| Kalau salah baca | Tambah 1 baris kamus | Lapor, lalu tunggu |
+| Offline | Jalan penuh, nulis gak nunggu jaringan | Bervariasi |
+| Datanya di mana | Database Supabase milik kamu | Server penyedia |
+| Biaya | Nol (tier gratis cukup) | Sering ada fitur berbayar |
+| Kecepatan paham kalimat | < 5 md, di device | Tergantung server kalau pakai AI |
+
+</details>
+
+### Kapan **jangan** pakai ini
+
+Bagian ini yang bikin bagian di atas layak dipercaya.
+
+| Kalau kamu… | Pakai yang lain |
+|---|---|
+| Butuh **notifikasi/pengingat** yang bunyi | Belum ada di sini. Ini pemakaian paling umum, dan HaKaiTask belum bisa |
+| Kerja **bareng tim**, bagi-bagi task | Gak ada fitur kolaborasi sama sekali |
+| Butuh **app mobile native** | Belum ada; web-nya jalan di HP tapi belum bisa di-install |
+| Mau **integrasi** Google Calendar, email, Slack | Sengaja dibuang demi satu sumber kebenaran |
+| Gak nyaman **ngetik**, lebih suka klik-klik | Hampir semua di sini lewat mengetik |
+| Butuh **dukungan resmi** & jaminan uptime | Ini proyek pribadi |
+
+Intinya: HaKaiTask menang kalau kamu orang Indonesia yang mikirnya cepat, ngetik
+cepat, dan kesal harus menerjemahkan pikiran sendiri jadi formulir. Di luar itu,
+app lain kemungkinan lebih cocok — dan itu wajar.
 
 ---
 
@@ -534,6 +612,168 @@ DOM. Itu yang bikin logikanya bisa dipakai ulang di mobile nanti tanpa ditulis u
 
 Ketiganya menyimpan **alasan** di balik keputusan, termasuk yang **dibatalkan**
 dan kenapa — bagian yang biasanya hilang begitu kode ditulis.
+
+---
+
+## Masalah yang dipecahkan
+
+Semua di bawah ini **beneran kejadian** waktu dipakai, bukan skenario karangan.
+Ditulis di sini karena pola kegagalannya lebih berguna daripada daftar fiturnya —
+dan karena tiap satu meninggalkan aturan yang sekarang dijaga tes.
+
+<details open>
+<summary><b>Ketika sistem terlalu percaya diri</b></summary>
+
+<br>
+
+**"ok terimakasih" jadi task berjudul "Terimakasih".**
+Jalur bikin dipasang sebagai *default* buat kalimat apa pun yang nyisain kata.
+Padahal bikin task itu perubahan data — gak boleh kejadian cuma gara-gara kamu
+sopan. Sekarang bikin otomatis hanya kalau ada aba-abanya: kata perintah
+(`tambahin`) atau waktu (`besok jam 9`). Selain itu ditanya dulu.
+
+> **Aturan yang lahir:** kalau ragu, pilih baca. Salah-baca cuma bikin daftar
+> yang gak kepake; salah-tulis bikin data kotor yang harus kamu bersihin.
+
+**Ketikan nyasar `1` jadi task berjudul "1".**
+Judul tanpa satu huruf pun sekarang ditolak.
+
+**"jadwalin buat bangun subuh jam 5" jadi judul "Buat bangun jam 5" @ 17:00.**
+Parser cuma mengonsumsi satu frasa niat lalu berhenti, jadi kata kedua nyangkut
+di judul — dan "buat" di kalimat itu artinya *untuk*, bukan *membuat*. Ekspresi
+jam kedua juga bocor karena waktunya sudah keburu diambil dari kata "subuh".
+
+</details>
+
+<details>
+<summary><b>Ketika barangnya ada tapi gak ketemu</b></summary>
+
+<br>
+
+**Bikin pakai kata "rapat", lalu "tampilin task" gak nemu.**
+Dulu kata seperti `rapat`/`zoom` bikin jenis terpisah dari task. Tiap kali,
+jawabannya benar secara harfiah dan salah secara pengalaman — orang gak mikir
+"ini task apa jadwal", dia cuma tau ada sesuatu di hari Rabu.
+
+Sempat ditambal dengan petunjuk *"tapi ada 1 jadwal — maksudnya itu?"*. Itu
+nutupin gejala, bukan sebabnya. Akhirnya **dua jenis itu disatukan**, dan
+seluruh kelas kegagalan ini jadi mustahil.
+
+> **Aturan yang lahir:** kalau pengguna gak pernah minta suatu pembagian,
+> jangan paksa dia memikirkannya.
+
+**"tampilin semua jadwal gw" jawab kosong padahal ada isinya.**
+Jendela pencarian dimulai dari *detik ini*, jadi agenda jam 5 pagi hilang kalau
+ditanya malamnya. Sekarang mulai dari awal hari, dan kata "semua" ikut menarik
+yang sudah lewat.
+
+**"tampilin agenda zoom gw" jawab "gue belum ngerti zoom"** — padahal `zoom` ada
+di kamus bawaan. Penyebabnya asumsi yang salah di kode: token sisa dianggap sama
+dengan token tak dikenal. Padahal kata kategori sengaja dibiarkan utuh supaya
+bisa merangkap jadi kata kunci.
+
+**"ubah task laporan jadi jam 9" gak nemu apa-apa.**
+Kata tujuan (`jam 9`) ikut terkumpul jadi kata kunci, jadi sistem mencari
+*"laporan jadi jam 9"*. Ditemukan bukan oleh manusia, tapi oleh suite tes yang
+menguji contoh-contoh di README ini.
+
+</details>
+
+<details>
+<summary><b>Ketika waktu dibaca salah</b></summary>
+
+<br>
+
+**"jadwal hari rabu besok" melompat sepekan.**
+"rabu besok" itu penekanan, bukan "rabu minggu depan" — aturan yang sudah lama
+dipegang parser, tapi terbalik waktu dipindah ke lapisan chat.
+
+**"besok jam 8 kosong ga?" dijawab "sibuk"** gara-gara ada rapat sore. Jam
+eksplisit gak dipakai mempersempit, jadi yang dicek seharian penuh.
+
+**Agenda berulang gak pernah muncul di hari berikutnya.**
+Pencocokannya cuma "tanggal mulainya sama", jadi "standup tiap hari kerja" cuma
+nongol di tanggal ia dibuat. Untuk kalender itu terlihat kosong; untuk chat itu
+**berbohong dengan yakin**. Sekarang RRULE diekspansi jadi okurensi nyata, dan
+agenda lintas tengah malam kehitung di dua hari yang dilewatinya.
+
+</details>
+
+<details>
+<summary><b>Ketika data diam-diam hilang</b></summary>
+
+<br>
+
+**Badge "Perlu dicek" nyangkut permanen.**
+Mutasi yang gagal kirim 10 kali masuk *dead letter* — dan dari sana tidak ada
+jalan kembali. Badge menempel selamanya walau penyebabnya sudah beres. Sekarang
+badge itu tombol: sekali ketuk, antrean dicoba ulang.
+
+**Semua pengiriman ke server gagal dengan `null value in column "title"`.**
+Ditemukan lewat log Supabase, bukan tebakan. Mutasi "update" hanya mengirim
+field yang berubah; kalau baris aslinya belum pernah sampai server, upsert
+mencoba menyisipkan baris baru tanpa kolom wajib — dan gagal, selamanya.
+Sekarang yang dikirim snapshot penuh.
+
+**Jadwal dibuat di HP, hilang di laptop.**
+Tabelnya sudah ada di database sejak awal, lengkap dengan RLS — tapi tidak ada
+satu baris pun kode klien yang menyentuhnya.
+
+> **Aturan yang lahir:** fitur yang "sudah direncanakan" tidak sama dengan
+> fitur yang jalan. Yang menentukan bukan skemanya, tapi kodenya.
+
+</details>
+
+<details>
+<summary><b>Ketika kamus melawan dirinya sendiri</b></summary>
+
+<br>
+
+**"tampilin task yang belum selesai" gak bisa menyaring status.**
+Kata `belum`, `udah`, dan `sudah` ada di daftar buang kamus — masuk akal untuk
+*membuat* task, fatal untuk *mencari*. Sama halnya `kemarin`, dan `jadwal` yang
+terdaftar sebagai perintah membuat jadwal.
+
+Ini yang menentukan seluruh arsitektur chat: lapisan kata kerja harus jalan
+**di atas** parser lama, bukan menggantikannya.
+
+**"hapus vocabulary clientan" gak pernah menemukan entrinya.**
+Kamus pribadi mengekspansi argumen perintahnya sendiri — jadi `clientan` berubah
+jadi `meeting client` sebelum sempat dicari. Sekarang perintah *tentang* kamus
+kebal dari ekspansi.
+
+**"hapus semua meeting minggu ini" cuma kena separuh.**
+Kata kunci dan kategori dipakai bersamaan, jadi "Sync tim" lolos kategori tapi
+gugur di kata kunci. Sekarang kata kunci hanya dibuang kalau ia memang kata
+*generik* dari kategorinya — `meeting` iya, `zoom` tidak.
+
+</details>
+
+<details>
+<summary><b>Ketika letaknya yang salah, bukan logikanya</b></summary>
+
+<br>
+
+**Tombol "Bersihkan chat" gak ketemu.**
+Ada, tapi ditaruh di *atas* daftar pesan — jadi tertutup begitu percakapan
+panjang. Ironisnya itu persis masalah yang bikin navbar dibuat sticky. Sekarang
+tombolnya ikut di blok bawah yang selalu menempel.
+
+**Konteks percakapan tertinggal saat chat dibersihkan.**
+Membersihkan layar tanpa mereset pertanyaan tertunda bikin balasan berikutnya
+aneh tanpa sebab yang kelihatan.
+
+</details>
+
+<br>
+
+Ringkasnya, tiga aturan yang paling sering menyelamatkan:
+
+| | |
+|---|---|
+| **Kalau ragu, pilih baca** | Operasi baca murah; operasi tulis mahal |
+| **Gagal dengan kelihatan** | Lebih baik bilang tidak tahu daripada menebak diam-diam |
+| **Jangan paksa pengguna memikirkan pembagian yang bukan miliknya** | task vs jadwal, dibuat-vs-dicari, lokal-vs-tersinkron |
 
 ---
 
