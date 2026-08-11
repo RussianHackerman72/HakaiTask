@@ -322,7 +322,12 @@ function route(
  */
 function doMaybeCreate(input: string, ctx: ChatContext): TurnResult {
   const preview = parseQuickAdd(input, { now: ctx.now });
-  const title = cleanTitle(preview.title, (preview.startAt ?? preview.dueAt) !== undefined);
+  const punyaWaktu = (preview.startAt ?? preview.dueAt) !== undefined;
+  const title = cleanTitle(preview.title, {
+    hasTime: punyaWaktu,
+    hasDate: punyaWaktu,
+    now: ctx.now,
+  });
   if (!/\p{L}/u.test(title)) return result([say(R.unknown())]);
 
   return result([say(R.askConfirmCreate(title), { choices: ["ya", "batal"] })], [], {
@@ -560,28 +565,89 @@ function doCreate(input: string, ctx: ChatContext): TurnResult {
     if (!v.phrase.includes(" ") && !v.meaning.includes(" ")) userLexicon[v.phrase] = v.meaning;
   }
 
-  const raw = parseQuickAdd(input, { now: ctx.now, userLexicon });
-  const title = cleanTitle(raw.title, (raw.startAt ?? raw.dueAt) !== undefined);
+  const items: ParseResult[] = [];
 
-  // `kind` dipaksa "task". Parser masih bisa nyimpulin "busy" dari kata kayak
-  // "rapat"/"jadwalin", tapi pemisahan itu udah dibuang dari model: user gak
-  // pernah minta dua jenis, dan bedanya cuma bikin barang yang dia bikin gak
-  // ketemu waktu dicari pakai kata yang lain. Keputusannya ditaruh DI SINI,
-  // bukan di lapisan app, biar ikut ketahan tes.
-  const parsed: ParseResult = { ...raw, title, kind: "task" };
+  for (const potongan of splitCompound(input)) {
+    const raw = parseQuickAdd(potongan, { now: ctx.now, userLexicon });
+    const when = raw.startAt ?? raw.dueAt;
+    const title = cleanTitle(raw.title, {
+      hasTime: when !== undefined,
+      hasDate: when !== undefined,
+      now: ctx.now,
+    });
 
-  // Judul tanpa satu huruf pun ("1", "42", "-") bukan judul — itu ketikan
-  // nyasar, atau jawaban ordinal yang nyampe pas pending-nya udah lewat.
-  // Tanpa penjagaan ini, ngetik "1" doang bikin task berjudul "1".
-  if (!/\p{L}/u.test(parsed.title)) {
-    return result([say(R.askTitle())]);
+    // Judul tanpa satu huruf pun ("1", "42", "-") bukan judul — itu ketikan
+    // nyasar, atau jawaban ordinal yang nyampe pas pending-nya udah lewat.
+    if (!/\p{L}/u.test(title)) {
+      // Potongan tanpa judul TAPI bawa waktu itu keterangan buat yang
+      // sebelumnya: "rapat tim, besok jam 3". Ditempelin, bukan dibuang —
+      // kalau dibuang, tanggalnya ikut hilang tanpa user sadar.
+      const sebelumnya = items[items.length - 1];
+      if (when && sebelumnya) {
+        items[items.length - 1] = {
+          ...sebelumnya,
+          allDay: raw.allDay,
+          ...(raw.dueAt ? { dueAt: raw.dueAt } : {}),
+          ...(raw.startAt ? { startAt: raw.startAt } : {}),
+          ...(raw.endAt ? { endAt: raw.endAt } : {}),
+        };
+      }
+      // Selain itu cuma kata perintah ("tambahkan jadwal") — lewat.
+      continue;
+    }
+
+    // `kind` dipaksa "task". Parser masih bisa nyimpulin "busy" dari kata kayak
+    // "rapat"/"jadwalin", tapi pemisahan itu udah dibuang dari model.
+    items.push({ ...raw, title, kind: "task" });
   }
 
-  const when = parsed.startAt ?? parsed.dueAt;
+  if (items.length === 0) return result([say(R.askTitle())]);
+
+  const effects: Effect[] = items.map((parsed) => ({ type: "CREATE_FROM_PARSE", parsed }));
+
+  if (items.length === 1) {
+    const satu = items[0]!;
+    const when = satu.startAt ?? satu.dueAt;
+    return result([say(R.created(satu.title, when?.toISOString(), satu.allDay))], effects);
+  }
+
   return result(
-    [say(R.created(parsed.title, when?.toISOString(), parsed.allDay))],
-    [{ type: "CREATE_FROM_PARSE", parsed }],
+    [
+      say(
+        R.createdMany(
+          items.map((p) => ({
+            title: p.title,
+            allDay: p.allDay,
+            ...((p.startAt ?? p.dueAt) ? { at: (p.startAt ?? p.dueAt)!.toISOString() } : {}),
+          })),
+        ),
+      ),
+    ],
+    effects,
   );
+}
+
+/**
+ * Pecah satu kalimat jadi beberapa item: "zoom dismath rabu, zoom calculus
+ * kamis jam 1" → dua task.
+ *
+ * Cuma koma dan titik koma yang dipakai sebagai pemisah. Kata "dan" sengaja
+ * TIDAK — di bahasa Indonesia dia sering bagian dari satu nama utuh ("rapat
+ * evaluasi dan perencanaan"), dan salah pecah di situ bikin dua task rusak
+ * dari satu niat yang benar.
+ *
+ * Pemecahan ini cuma buat jalur BIKIN. Perintah merusak tetap satu per satu
+ * (PLAN-CHAT §14) — eksekusi separuh jalan waktu menghapus jauh lebih mahal
+ * daripada waktu menambah.
+ */
+function splitCompound(input: string): string[] {
+  // Koma desimal ("1,5 jam") dilindungi dulu biar gak ikut kepecah.
+  const AMAN = " ";
+  return input
+    .replace(/(\d),(\d)/g, `$1${AMAN}$2`)
+    .split(/\s*[;,]\s*/)
+    .map((s) => s.split(AMAN).join(",").trim())
+    .filter((s) => s !== "");
 }
 
 /**
@@ -617,12 +683,33 @@ const TIME_LEFTOVER_RE = /\b(jam|pukul)\s+\d{1,2}([:.]\d{2})?\b/gi;
  *     mendarat di judul. Judul yang bilang "jam 5" padahal agendanya 05:00
  *     dari kata "subuh" itu bikin user gak percaya sama hasil parsingnya.
  */
-function cleanTitle(title: string, hasTime: boolean): string {
+function cleanTitle(title: string, opts: { hasTime: boolean; hasDate: boolean; now: Date }): string {
   let out = title;
 
-  if (hasTime) out = out.replace(TIME_LEFTOVER_RE, " ");
+  if (opts.hasTime) out = out.replace(TIME_LEFTOVER_RE, " ");
 
   let parts = out.split(/\s+/).filter((w) => w !== "");
+
+  // Sisa ekspresi TANGGAL juga dibuang kalau tanggalnya udah kebaca.
+  // `applyDate()` berhenti di kecocokan pertama, jadi kalau user nyebut dua
+  // acuan ("rabu 12 agustus") yang kedua mendarat di judul — hasilnya judul
+  // "Zoom dismath di 12 agustus" padahal tanggalnya udah kesimpen terpisah.
+  if (opts.hasDate && parts.length > 0) {
+    const lower = parts.map((w) => w.toLowerCase().replace(/[.,;:]+$/, ""));
+    const buang = new Set<number>();
+    for (const span of findAllRanges(lower, opts.now)) {
+      for (let k = span.at; k < span.at + span.len; k++) buang.add(k);
+      // Preposisi di depannya ikut, biar gak nyisa "di" menggantung.
+      const sebelum = lower[span.at - 1];
+      if (sebelum === "di" || sebelum === "pada" || sebelum === "tanggal" || sebelum === "tgl") {
+        buang.add(span.at - 1);
+      }
+    }
+    // Jangan sampai judulnya habis total — kalau isinya memang cuma tanggal,
+    // biarkan apa adanya dan penjagaan "harus ada huruf" yang menangani.
+    if (buang.size < parts.length) parts = parts.filter((_, i) => !buang.has(i));
+  }
+
   while (parts.length > 0 && LEADING_NOISE.has(parts[0]!.toLowerCase())) {
     parts = parts.slice(1);
   }

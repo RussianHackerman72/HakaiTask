@@ -846,3 +846,28 @@ cuma gak dibikin baru lagi.
 time blocking butuh itu lagi, bedanya lebih tepat jadi **atribut** di Task
 (mis. `blocking: true`) daripada jenis kedua — atribut gak bikin barang hilang
 dari pencarian.
+
+---
+
+## §24 Beberapa item dalam satu kalimat (revisi §14)
+
+**Keputusan:** jalur BIKIN boleh memproses beberapa item sekaligus, dipisah
+**koma atau titik koma**. Perintah merusak tetap satu per satu.
+
+**Kenapa direvisi.** §14 nolak perintah majemuk karena "separuh-jalan itu
+berbahaya". Alasan itu tetap benar — tapi cuma buat aksi yang MENCAMPUR jenis,
+dan terutama buat menghapus. Bikin dua task lalu gagal di task ketiga gak
+merusak apa pun: yang jadi tetap benar, dan sisanya tinggal diketik ulang.
+
+Pemicunya pemakaian nyata: `tambahkan jadwal, zoom dismath di rabu 12 agustus,
+zoom calculus di 13 agustus di jam 13.20` jadi SATU task berjudul gabungan.
+
+**Aturan yang dipegang:**
+
+| | |
+|---|---|
+| Pemisah | Cuma `,` dan `;`. Kata "dan" TIDAK — di bahasa Indonesia dia sering bagian nama utuh ("rapat evaluasi dan perencanaan") |
+| Koma desimal | Dilindungi — "1,5 jam" gak ikut kepecah |
+| Potongan tanpa judul | Kalau bawa waktu, ditempelin ke item sebelumnya ("rapat tim, besok jam 3" = satu task). Kalau enggak, itu cuma kata perintah dan dilewat |
+| Balasan | SELALU dirinci satu-satu. Pemecahan kalimat itu tebakan struktur — user harus bisa langsung lihat kalau pecahannya meleset |
+| Perintah merusak | Tetap gak dipecah |

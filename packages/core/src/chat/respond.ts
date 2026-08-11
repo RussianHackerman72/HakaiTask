@@ -172,6 +172,22 @@ export function askTitle(): string {
 }
 
 /**
+ * Beberapa item sekaligus dari satu kalimat.
+ *
+ * Hasilnya SELALU dirinci satu-satu, bukan cuma "3 ditambahin". Pemecahan
+ * kalimat itu tebakan struktur — user harus bisa langsung lihat apakah
+ * pecahannya sesuai maksudnya, dan mana yang tanggalnya meleset.
+ */
+export function createdMany(
+  items: readonly { title: string; at?: string; allDay: boolean }[],
+): string {
+  const baris = items.map(
+    (i) => `• ${i.at ? `${shortWhen(i.at, i.allDay)} — ` : ""}${i.title}`,
+  );
+  return `Oke, ${items.length} ditambahin:\n${baris.join("\n")}`;
+}
+
+/**
  * Basa-basi dijawab pendek dan berhenti di situ.
  *
  * Sengaja gak ngajak ngobrol lanjut ("ada lagi yang bisa dibantu?"): chat ini

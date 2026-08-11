@@ -859,6 +859,75 @@ describe("regresi — jawaban 'yang mana?' gak boleh bikin task baru", () => {
   });
 });
 
+describe("regresi — beberapa item dalam satu kalimat", () => {
+  function dibuat(input: string) {
+    return conv()
+      .send(input)
+      .effects.filter((e): e is Extract<Effect, { type: "CREATE_FROM_PARSE" }> =>
+        e.type === "CREATE_FROM_PARSE",
+      )
+      .map((e) => ({
+        judul: e.parsed.title,
+        tgl: (e.parsed.startAt ?? e.parsed.dueAt)?.getDate(),
+        jam: (e.parsed.startAt ?? e.parsed.dueAt)?.getHours(),
+      }));
+  }
+
+  it("laporan asli: dua zoom dalam satu kalimat", () => {
+    const r = dibuat(
+      "tambahkan jadwal , zoom dismath di rabu 12 agustus , zoom calculus di 13 agustus di jam 13.20",
+    );
+    expect(r).toEqual([
+      { judul: "Zoom dismath", tgl: 12, jam: 0 },
+      { judul: "Zoom calculus", tgl: 13, jam: 13 },
+    ]);
+  });
+
+  it("tanggal gak bocor ke judul walau disebut dua kali", () => {
+    expect(dibuat("tambahin zoom dismath di rabu 12 agustus")[0]!.judul).toBe("Zoom dismath");
+  });
+
+  it("daftar sederhana", () => {
+    expect(dibuat("tambahin beli kopi, beli susu, beli roti").map((x) => x.judul)).toEqual([
+      "Beli kopi",
+      "Beli susu",
+      "Beli roti",
+    ]);
+  });
+
+  it("potongan tanpa judul nempel ke item sebelumnya, bukan dibuang", () => {
+    const r = dibuat("tambahin rapat tim, besok jam 3");
+    expect(r).toHaveLength(1);
+    expect(r[0]).toMatchObject({ judul: "Rapat tim", tgl: 8, jam: 15 });
+  });
+
+  it("koma desimal gak ikut kepecah", () => {
+    const r = dibuat("tambahin olahraga 1,5 jam besok");
+    expect(r).toHaveLength(1);
+    expect(r[0]!.judul).toBe("Olahraga");
+  });
+
+  it("balasannya dirinci satu-satu, biar salah pecah langsung kelihatan", () => {
+    const out = textOf(conv().send("tambahin beli kopi, beli susu"));
+    expect(out).toContain("2 ditambahin");
+    expect(out).toContain("Beli kopi");
+    expect(out).toContain("Beli susu");
+  });
+
+  it("satu item tetap dijawab ringkas seperti biasa", () => {
+    expect(textOf(conv().send("tambahin beli kopi besok"))).toContain('Oke — "Beli kopi"');
+  });
+
+  it("perintah MERUSAK tetap gak dipecah — separuh jalan pas hapus itu mahal", () => {
+    const tasks = [
+      task("a", "Beli kopi", { dueAt: iso(2026, 8, 8, 9, 0) }),
+      task("b", "Beli susu", { dueAt: iso(2026, 8, 8, 10, 0) }),
+    ];
+    const r = conv({ tasks }).send("hapus beli kopi, beli susu");
+    expect(r.effects).toHaveLength(0); // konfirmasi dulu, bukan langsung hapus dua-duanya
+  });
+});
+
 describe("bantuan & fallback", () => {
   it("bantuan nampilin contoh yang bisa dipakai", () => {
     expect(textOf(conv().send("bisa ngapain aja?"))).toContain("tambahin task");
