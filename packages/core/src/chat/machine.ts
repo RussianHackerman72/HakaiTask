@@ -382,6 +382,12 @@ function handlePending(ws: readonly string[], p: Pending, ctx: ChatContext): Tur
   }
 
   if (p.kind === "choose") {
+    // "yang terakhir" itu posisi relatif, bukan nomor urut — makanya gak bisa
+    // ditaruh di daftar ordinal (di sana dia harus punya angka tetap).
+    if (ws.includes("terakhir") || ws.includes("paling bawah")) {
+      return runAction({ ...p.action, target: p.refs[p.refs.length - 1]! }, ctx);
+    }
+
     const n = readOrdinal(ws);
     if (n !== null) {
       const ref = p.refs[n - 1];

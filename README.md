@@ -277,6 +277,15 @@ label **#konten**, estimasi **90 menit**. Satu baris, sekali Enter.
 Jam yang ambigu diselesaikan dengan aturan tetap: **`jam 3` = 15:00**,
 **`jam 9` = 09:00**. Kalau kamu sebut `pagi`/`malam`, itu yang menang.
 
+Kamusnya berisi **~1.900 entri**: sinonim formal, bentuk sehari-hari, singkatan
+(`bsk`, `tggl`, `jm`), dan salah ketik yang umum (`pagii`, `kmrin`, `malem`).
+Jadi `tolong catat fisioterapi bsk pagii` kebaca utuh — judul, tanggal, jam.
+
+Ada juga **audit otomatis**: tiap entri di kamus diuji benar-benar berpengaruh.
+Ini bukan formalitas — `"penting banget"` pernah nyangkut jadi entri mati karena
+kata `banget` sudah dibuang di tahap yang jalan lebih dulu, jadi frasa itu tidak
+akan pernah cocok. Audit itu yang menemukannya.
+
 </details>
 
 <details>
@@ -653,7 +662,7 @@ Kunci *publishable* memang aman dipajang di client — datamu dijaga
 |---|---|
 | `pnpm dev` | Server pengembangan |
 | `pnpm build` | Build produksi |
-| `pnpm test` | Jalankan semua tes (254) |
+| `pnpm test` | Jalankan semua tes (312) |
 | `pnpm typecheck` | Periksa tipe seluruh workspace |
 
 ---
@@ -895,7 +904,7 @@ Ringkasnya, tiga aturan yang paling sering menyelamatkan:
 - Dashboard dengan Focus Card, kalender bulanan
 - Sinkronisasi offline-first + realtime, konflik LWW per field
 - Mode terang/gelap, command palette
-- **254 tes otomatis** — termasuk suite khusus yang menguji tiap contoh di README ini
+- **312 tes otomatis** — termasuk suite yang menguji tiap contoh di README ini, dan audit yang memastikan tiap entri kamus benar-benar berpengaruh
 
 </details>
 
