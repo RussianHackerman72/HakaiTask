@@ -257,7 +257,19 @@ export function analyzeWords(ws: readonly string[], now: Date): ChatAnalysis {
   }
 
   // ⑦ rentang tanggal
-  const found = findRange(ws, now);
+  //
+  // Kata bagian hari yang berdiri sendiri ("malam") ditolak kalau kata
+  // sebelumnya masih kata isi — di posisi itu dia hampir selalu bagian JUDUL,
+  // bukan penyaring: "makan malam", "shift malam", "lari pagi". Tanpa
+  // penjagaan ini, "selesaikan makan malam" nyari agenda petang ini doang dan
+  // task-nya gak pernah ketemu.
+  const found = findRange(ws, now, (hit) => {
+    if (!hit.bareDaypart || hit.at === 0) return true;
+    const prev = ws[hit.at - 1];
+    const prevMasihIsi = prev !== undefined && !used[hit.at - 1] && !NOISE.has(prev);
+    return !prevMasihIsi;
+  });
+
   let range: DateRange | undefined;
   if (found && !used[found.at]) {
     range = found.range;

@@ -769,6 +769,96 @@ describe("regresi — basa-basi gak boleh jadi task", () => {
   });
 });
 
+/**
+ * Dua laporan dari layar asli, sehari setelah dipakai beneran.
+ */
+describe("regresi — kata waktu di dalam JUDUL", () => {
+  const tasks = [
+    task("t1", "Makan malam", { dueAt: iso(2026, 8, 10, 20, 0) }),
+    task("t2", "Lari pagi", { dueAt: iso(2026, 8, 11, 6, 0) }),
+  ];
+
+  it("'selesaikan makan malam' nemu task-nya, bukan nyaring ke petang ini", () => {
+    expect(conv({ tasks }).send("selesaikan makan malam").effects[0]).toMatchObject({
+      type: "PATCH_TASK",
+      id: "t1",
+      patch: { status: "done" },
+    });
+  });
+
+  it("huruf besar gak ngaruh", () => {
+    expect(conv({ tasks }).send("selesaikan Makan malam").effects[0]).toMatchObject({ id: "t1" });
+  });
+
+  it("'lari pagi' juga aman", () => {
+    expect(conv({ tasks }).send("selesaiin lari pagi").effects[0]).toMatchObject({ id: "t2" });
+  });
+
+  it("tapi bagian hari SENDIRIAN tetap nyaring waktu", () => {
+    expect(analyze("tampilin agenda sore", NOW).range?.label).toBe("hari ini sore");
+    expect(analyze("sore gw kosong ga?", NOW).range?.label).toBe("hari ini sore");
+  });
+
+  it("acuan hari beneran tetap kepakai walau ada kata waktu di judul", () => {
+    const a = analyze("selesaikan makan malam besok", NOW);
+    expect(a.range?.label).toBe("besok");
+  });
+});
+
+describe("regresi — jawaban 'yang mana?' gak boleh bikin task baru", () => {
+  const tasks = [
+    task("c1", "Agenda makan bareng keluarga", { dueAt: iso(2026, 8, 8, 11, 0) }),
+    task("c2", "Makan enak", { dueAt: iso(2026, 8, 9, 0, 0) }),
+    task("c3", "Makan malam", { dueAt: iso(2026, 8, 10, 20, 0) }),
+  ];
+
+  it("jawaban pakai TANGGAL nunjuk kandidat yang bener", () => {
+    const c = conv({ tasks });
+    expect(textOf(c.send("selesaiin makan"))).toContain("Yang mana?");
+    const r = c.send("senin 10 agustus");
+    expect(r.effects[0]).toMatchObject({ type: "PATCH_TASK", id: "c3" });
+  });
+
+  it("tanggal yang BARU LEWAT juga kena — user nunjuk yang udah ada, bukan bikin baru", () => {
+    // NOW = 7 Agu. Kandidat di 5 Agu (kemarin lusa) — "5 agustus" telanjang
+    // diartikan tahun depan kalau gak ada penanganan khusus.
+    const lampau = [
+      task("p1", "Makan siang", { dueAt: iso(2026, 8, 5, 12, 0) }),
+      task("p2", "Makan enak", { dueAt: iso(2026, 8, 6, 12, 0) }),
+    ];
+    const c = conv({ tasks: lampau });
+    c.send("selesaiin makan");
+    expect(c.send("5 agustus").effects[0]).toMatchObject({ type: "PATCH_TASK", id: "p1" });
+  });
+
+  it("jawaban pakai JUDUL juga jalan", () => {
+    const c = conv({ tasks });
+    c.send("selesaiin makan");
+    expect(c.send("makan enak").effects[0]).toMatchObject({ id: "c2" });
+  });
+
+  it("jawaban gak jelas: TANYA LAGI, jangan bikin task", () => {
+    const c = conv({ tasks });
+    c.send("selesaiin makan");
+    const r = c.send("hmm yang itu deh");
+    expect(r.effects).toHaveLength(0);
+    expect(textOf(r)).toContain("nomornya");
+    expect(c.pending?.kind).toBe("choose");
+  });
+
+  it("kalau user ganti pikiran pakai perintah baru, dibiarin lewat", () => {
+    const c = conv({ tasks });
+    c.send("selesaiin makan");
+    expect(textOf(c.send("tampilin task besok"))).not.toContain("nomornya");
+  });
+
+  it("nomor tetap cara paling langsung", () => {
+    const c = conv({ tasks });
+    c.send("selesaiin makan");
+    expect(c.send("2").effects[0]).toMatchObject({ id: "c2" });
+  });
+});
+
 describe("bantuan & fallback", () => {
   it("bantuan nampilin contoh yang bisa dipakai", () => {
     expect(textOf(conv().send("bisa ngapain aja?"))).toContain("tambahin task");

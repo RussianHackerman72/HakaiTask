@@ -16,6 +16,7 @@ import {
   analyzeWords,
   isKnownWord,
   isThanks,
+  readVerb,
   type ChatAnalysis,
   type ObjectKind,
   type Verb,
@@ -23,7 +24,15 @@ import {
 import { findLongest, words } from "./match.js";
 import { queryItems, taskTime, type QueryContext, type QueryFilter } from "./query.js";
 import { expandBlocks } from "./recur.js";
-import { atClock, findClock, readRange, upcomingRange, type DateRange } from "./range.js";
+import {
+  atClock,
+  findAllRanges,
+  findClock,
+  inRange,
+  readRange,
+  upcomingRange,
+  type DateRange,
+} from "./range.js";
 import { resolveTarget, stillExists, type Ref } from "./resolve.js";
 import * as R from "./respond.js";
 import {
@@ -369,12 +378,29 @@ function handlePending(ws: readonly string[], p: Pending, ctx: ChatContext): Tur
 
   if (p.kind === "choose") {
     const n = readOrdinal(ws);
-    if (n === null) return null;
-    const ref = p.refs[n - 1];
-    if (!ref) {
-      return result([say(`Cuma ada ${p.refs.length} pilihan. Sebutin nomornya ya.`)], [], p);
+    if (n !== null) {
+      const ref = p.refs[n - 1];
+      if (!ref) {
+        return result([say(`Cuma ada ${p.refs.length} pilihan. Sebutin nomornya ya.`)], [], p);
+      }
+      return runAction({ ...p.action, target: ref }, ctx);
     }
-    return runAction({ ...p.action, target: ref }, ctx);
+
+    // Bukan nomor — coba cocokin lewat judul atau tanggal.
+    const cocok = pickByText(ws, p.refs, ctx.now);
+    if (cocok.length === 1) return runAction({ ...p.action, target: cocok[0]! }, ctx);
+
+    // Balasannya jelas perintah baru → biarkan lewat, user ganti pikiran.
+    if (readVerbAnywhere(ws) !== null) return null;
+
+    // Selain itu: TANYA LAGI. Jangan pernah jatuh ke jalur bikin dari sini —
+    // "senin 10 agustus" pernah nyasar jadi task baru berjudul "10 agustus"
+    // padahal user lagi nunjuk salah satu pilihan.
+    const pesan =
+      cocok.length > 1
+        ? `Masih ada ${cocok.length} yang cocok. Sebutin nomornya ya.`
+        : "Gue belum nangkep yang mana. Sebutin nomornya ya.";
+    return result([say(`${pesan}\n${R.numbered(p.refs)}`, { refs: p.refs })], [], p);
   }
 
   if (p.kind === "confirm") {
@@ -391,6 +417,53 @@ function handlePending(ws: readonly string[], p: Pending, ctx: ChatContext): Tur
 
   return null;
 }
+
+/** Ada kata perintah di kalimat ini? Dipakai buat tau user ganti topik. */
+function readVerbAnywhere(ws: readonly string[]): Verb | null {
+  for (let i = 0; i < ws.length; i++) {
+    const hit = readVerb(ws, i);
+    if (hit) return hit.verb;
+  }
+  return null;
+}
+
+/**
+ * Cocokkan jawaban "yang mana?" ke kandidat lewat judul atau tanggal.
+ *
+ * Orang gak selalu jawab pakai nomor. Dua cara alami lain: nyebut sebagian
+ * judulnya ("makan malam") atau nyebut tanggalnya ("senin 10 agustus").
+ * Tanggalnya dicoba dari SEMUA acuan yang kesebut — "senin 10 agustus" nyebut
+ * dua, dan yang nyambung ke kandidat bisa yang mana aja.
+ */
+function pickByText(ws: readonly string[], refs: readonly Ref[], now: Date): Ref[] {
+  const teks = ws.filter((w) => !NOISE_JAWABAN.has(w)).join(" ").trim();
+
+  if (teks) {
+    const perJudul = refs.filter((r) => r.title.toLowerCase().includes(teks));
+    if (perJudul.length > 0) return perJudul;
+  }
+
+  const rentang = findAllRanges(ws, now);
+  if (rentang.length > 0) {
+    // Tanggal telanjang ("10 agustus") diartikan ke DEPAN — benar buat bikin
+    // sesuatu, tapi di sini user lagi nunjuk yang SUDAH ADA, dan itu bisa
+    // barusan lewat. Jadi tahun sebelumnya ikut dicoba.
+    const perTanggal = refs.filter((r) =>
+      rentang.some((x) => inRange(r.at, x.range) || inRange(r.at, mundurSetahun(x.range))),
+    );
+    if (perTanggal.length > 0) return perTanggal;
+  }
+
+  return [];
+}
+
+function mundurSetahun(r: DateRange): DateRange {
+  const geser = (d: Date) => new Date(new Date(d).setFullYear(d.getFullYear() - 1));
+  return { from: geser(r.from), to: geser(r.to), label: r.label };
+}
+
+/** Kata sambung yang gak boleh ikut jadi bahan pencocokan judul. */
+const NOISE_JAWABAN = new Set(["yang", "itu", "yg", "tuh", "dong", "aja", "gw", "gue", "saya"]);
 
 /**
  * Baca "kapan" dari sepotong kalimat. Hari dan jam ditangani terpisah karena

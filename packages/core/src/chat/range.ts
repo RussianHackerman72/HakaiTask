@@ -117,12 +117,22 @@ function narrowByDaypart(range: DateRange, part: string): DateRange {
 
 // ── pembacaan ────────────────────────────────────────────────────────────────
 
+export interface RangeHit {
+  range: DateRange;
+  len: number;
+  /**
+   * true kalau yang cocok CUMA kata bagian hari, tanpa acuan hari sama sekali
+   * ("malam"), bukan "besok malam".
+   *
+   * Penting karena kata begini sering jadi bagian JUDUL, bukan penyaring:
+   * "makan malam", "shift malam", "lari pagi". Pemanggil yang punya konteks
+   * kalimatnya yang mutusin mau dipakai atau enggak.
+   */
+  bareDaypart?: boolean;
+}
+
 /** Coba baca rentang mulai dari kata ke-`i`. */
-export function readRange(
-  ws: readonly string[],
-  i: number,
-  now: Date,
-): { range: DateRange; len: number } | null {
+export function readRange(ws: readonly string[], i: number, now: Date): RangeHit | null {
   const base = readDayAnchor(ws, i, now);
   if (!base) return null;
 
@@ -138,11 +148,7 @@ export function readRange(
   return base;
 }
 
-function readDayAnchor(
-  ws: readonly string[],
-  i: number,
-  now: Date,
-): { range: DateRange; len: number } | null {
+function readDayAnchor(ws: readonly string[], i: number, now: Date): RangeHit | null {
   const w = ws[i];
   if (w === undefined) return null;
   const n1 = ws[i + 1];
@@ -238,6 +244,7 @@ function readDayAnchor(
     return {
       range: narrowByDaypart(dayRange(now, "hari ini"), part.phrase),
       len: part.len,
+      bareDaypart: true,
     };
   }
 
@@ -287,13 +294,25 @@ function nextMonthDayLocal(now: Date, day: number): Date {
 // ── API tingkat kalimat ──────────────────────────────────────────────────────
 
 /** Rentang pertama yang ketemu di kalimat, beserta posisi & panjangnya. */
+/**
+ * Rentang pertama yang ketemu di kalimat.
+ *
+ * `accept` dipakai pemanggil buat menolak kecocokan yang secara konteks bukan
+ * penyaring waktu — dan pencarian LANJUT ke posisi berikutnya, bukan berhenti.
+ * Tanpa itu, "selesaikan makan malam besok" bakal kehilangan "besok" gara-gara
+ * "malam" ditolak duluan.
+ */
 export function findRange(
   ws: readonly string[],
   now: Date,
-): { range: DateRange; len: number; at: number } | null {
+  accept?: (hit: RangeHit & { at: number }) => boolean,
+): (RangeHit & { at: number }) | null {
   for (let i = 0; i < ws.length; i++) {
     const hit = readRange(ws, i, now);
-    if (hit) return { ...hit, at: i };
+    if (!hit) continue;
+    const withPos = { ...hit, at: i };
+    if (accept && !accept(withPos)) continue;
+    return withPos;
   }
   return null;
 }
@@ -301,6 +320,27 @@ export function findRange(
 /** Bentuk praktis buat tes & pemakaian cepat. */
 export function resolveDateRange(input: string, now: Date): DateRange | null {
   return findRange(words(input), now)?.range ?? null;
+}
+
+/**
+ * SEMUA rentang yang kesebut di kalimat, bukan cuma yang pertama.
+ *
+ * Dipakai waktu user jawab "yang mana?" pakai tanggal: "senin 10 agustus"
+ * nyebut dua acuan sekaligus, dan yang cocok sama kandidatnya bisa yang mana
+ * aja — jadi dua-duanya harus dicoba.
+ */
+export function findAllRanges(ws: readonly string[], now: Date): (RangeHit & { at: number })[] {
+  const out: (RangeHit & { at: number })[] = [];
+  for (let i = 0; i < ws.length; ) {
+    const hit = readRange(ws, i, now);
+    if (hit) {
+      out.push({ ...hit, at: i });
+      i += hit.len;
+      continue;
+    }
+    i += 1;
+  }
+  return out;
 }
 
 /**
