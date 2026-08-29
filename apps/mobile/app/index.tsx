@@ -1,22 +1,26 @@
 /**
- * Layar bukti-hidup buat tahap 4 — sengaja belum ada UI beneran.
+ * Galeri primitif — layar verifikasi tahap 5.
  *
- * Yang dibuktiin di sini cuma satu: seluruh pipa jalan. `openingMessage()`
- * itu fungsi murni di core yang baca DUA berkas kamus JSON, jadi kalau
- * kalimatnya nongol, artinya Metro berhasil nyelesaiin subpath export
- * `@hakaitask/core/chat`, spesifier ".js" yang nunjuk ke ".ts", dan impor
- * JSON tanpa import attribute — tiga hal yang jadi alasan tahap 1 ada.
+ * Tiap primitif dirender di sini biar bisa dicek dua-duanya, terang & gelap,
+ * tanpa nunggu layar aslinya jadi. Sekalian ngebuktiin `openingMessage()`
+ * jalan dari core dan MMKV masih nyimpen antar restart.
  */
 import { useMemo, useState } from "react";
-import { Pressable, SafeAreaView, ScrollView, Text, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { openingMessage } from "@hakaitask/core/chat";
-import { useKaiStore } from "@hakaitask/core/store";
 import { makeTask } from "@hakaitask/core";
+import { useKaiStore } from "@hakaitask/core/store";
 import { newId, useTasks } from "@hakaitask/app/tasks";
-import { headerDate } from "@hakaitask/app/format";
+import { headerDate, clock, whenLabel } from "@hakaitask/app/format";
+import { Card, Chip, IconButton, Pill, Screen, Switch, T, Tappable } from "../src/ui";
+import { useTheme, useThemePref } from "../src/theme";
 
-export default function Index() {
+export default function Gallery() {
+  const th = useTheme();
+  const { toggle, pref } = useThemePref();
   const [now] = useState(() => new Date());
+  const [chipOn, setChipOn] = useState(true);
+  const [sw, setSw] = useState(false);
   const tasks = useTasks();
 
   const salam = useMemo(
@@ -24,54 +28,85 @@ export default function Index() {
     [now, tasks],
   );
 
-  function tambah() {
-    useKaiStore.getState().upsertTask(
-      makeTask({
-        id: newId(),
-        userId: "local",
-        title: `Uji MMKV ${new Date().toLocaleTimeString("id-ID")}`,
-        allDay: false,
-        tags: [],
-        subtasks: [],
-      }),
-    );
-  }
+  const g = th.space[3];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#F0F0F0" }}>
-      <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
-        <Text style={{ fontSize: 13, fontWeight: "700", color: "#66666D" }}>
-          {headerDate(now).toUpperCase()}
-        </Text>
-
-        <View style={{ backgroundColor: "#FFFFFF", borderRadius: 28, padding: 20 }}>
-          <Text style={{ fontSize: 16, lineHeight: 24, color: "#0D0D0F" }}>{salam}</Text>
+    <Screen>
+      <ScrollView contentContainerStyle={{ paddingVertical: th.space[4], gap: g }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <T variant="meta" tone="ink40">{headerDate(now)}</T>
+          <T variant="num" tone="ink40" tabular>{clock(now)}</T>
         </View>
 
-        <Pressable
-          onPress={tambah}
-          style={{
-            backgroundColor: "#0D0D0F",
-            borderRadius: 9999,
-            minHeight: 44,
-            alignItems: "center",
-            justifyContent: "center",
-            paddingHorizontal: 24,
-          }}
-        >
-          <Text style={{ color: "#FFFFFF", fontWeight: "700" }}>Tambah task uji</Text>
-        </Pressable>
+        <T variant="display">Selamat datang.</T>
 
-        <Text style={{ fontSize: 13, fontWeight: "700", color: "#66666D" }}>
-          {tasks.length} task tersimpan — tutup paksa app, buka lagi, harus tetap ada
-        </Text>
+        <Card>
+          <T variant="body">{salam}</T>
+        </Card>
 
+        <T variant="meta" tone="ink40">Tipografi</T>
+        <Card style={{ gap: 6 }}>
+          <T variant="h1">Judul besar</T>
+          <T variant="h2">Judul sedang</T>
+          <T variant="body">Teks isi — 16px, tinggi baris 24.</T>
+          <T variant="bodySm" tone="ink70">Teks kecil, ink70.</T>
+          <T variant="meta" tone="ink40">Label meta</T>
+          <T variant="num" tabular>09:41 · 1234567890</T>
+          <T variant="mono">mono 13px</T>
+          <T variant="body" tone="accent">Aksen — cuma buat telat & P1</T>
+        </Card>
+
+        <T variant="meta" tone="ink40">Tombol</T>
+        <View style={{ gap: g }}>
+          <Pill label="Tombol utama" onPress={() => {}} />
+          <Pill label="Tombol lembut" tone="soft" onPress={() => {}} />
+          <Pill label="Nonaktif" disabled />
+        </View>
+
+        <T variant="meta" tone="ink40">Chip</T>
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          <Chip label="Aktif" active={chipOn} onPress={() => setChipOn(true)} />
+          <Chip label="Pasif" active={!chipOn} onPress={() => setChipOn(false)} />
+          <Chip label="#konten" />
+        </View>
+
+        <T variant="meta" tone="ink40">Ikon & switch</T>
+        <Card style={{ flexDirection: "row", alignItems: "center", gap: g }}>
+          <IconButton onPress={() => {}}><T variant="body">＋</T></IconButton>
+          <IconButton on="paper" onPress={() => {}}><T variant="body">✓</T></IconButton>
+          <View style={{ flex: 1 }} />
+          <Switch value={sw} onChange={setSw} />
+        </Card>
+
+        <T variant="meta" tone="ink40">Tema — sekarang: {pref} ({th.scheme})</T>
+        <Pill label="Ganti terang / gelap" tone="soft" onPress={toggle} />
+
+        <T variant="meta" tone="ink40">Uji simpan ({tasks.length} task)</T>
+        <Pill
+          label="Tambah task uji"
+          onPress={() =>
+            useKaiStore.getState().upsertTask(
+              makeTask({
+                id: newId(),
+                userId: "local",
+                title: `Uji ${clock(new Date())}`,
+                allDay: false,
+                tags: [],
+                subtasks: [],
+                dueAt: new Date(Date.now() + 86_400_000).toISOString(),
+              }),
+            )
+          }
+        />
         {tasks.map((t) => (
-          <View key={t.id} style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 14 }}>
-            <Text style={{ color: "#0D0D0F" }}>{t.title}</Text>
-          </View>
+          <Tappable key={t.id} onPress={() => {}}>
+            <Card style={{ borderRadius: th.radius.sm, paddingVertical: 12 }}>
+              <T variant="body">{t.title}</T>
+              <T variant="meta" tone="ink40">{whenLabel(t.dueAt, now, t.allDay)}</T>
+            </Card>
+          </Tappable>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   );
 }

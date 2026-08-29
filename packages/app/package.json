@@ -12,7 +12,8 @@
     "./select": "./src/select.ts",
     "./tasks": "./src/tasks.ts",
     "./chat": "./src/chat.ts",
-    "./sync": "./src/sync/index.ts"
+    "./sync": "./src/sync/index.ts",
+    "./theme": "./src/theme.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

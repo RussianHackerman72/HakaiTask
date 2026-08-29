@@ -23,6 +23,12 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@expo-google-fonts/geist-mono':
+        specifier: ^0.4.3
+        version: 0.4.3
+      '@expo-google-fonts/plus-jakarta-sans':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@hakaitask/app':
         specifier: workspace:*
         version: link:../../packages/app
@@ -902,8 +908,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@expo-google-fonts/geist-mono@0.4.3':
+    resolution: {integrity: sha512-gjnwv1QOG4meZpMhrLjTIPC/+lhyNu8EcXa2eJPVbPrYvguVjCfBq+Ezq6cWKWW8ung6fqb2TjvuTalE6lqlnw==}
+
   '@expo-google-fonts/material-symbols@0.4.45':
     resolution: {integrity: sha512-D5gd/uFa7KfMJX9S11hvej4GpQnBl27oKiUgyIq3cLTPtyDOWBwRgmeePIdV6+PGcedlDkaCND2BnRgAkxzNaA==}
+
+  '@expo-google-fonts/plus-jakarta-sans@0.4.2':
+    resolution: {integrity: sha512-6LYVmVGwjQvH+uzzWlVc9+oMj4lkNQ41aymVDjO+x8aFk8kCye20wOyLomYMZaMezA++Uf1mZRCw3W3Fy/hxEA==}
 
   '@expo/cli@57.0.20':
     resolution: {integrity: sha512-ZjWz7SA5TBTyKq4+aFRUPgMFxmqHtKkDMv6d85J2UAAjdRhkNRf+B80t+rr5IFo2ywuTvyrPRBth4ei4w08olA==}
@@ -4427,7 +4439,11 @@ snapshots:
   '@esbuild/win32-x64@0.25.12':
     optional: true
 
+  '@expo-google-fonts/geist-mono@0.4.3': {}
+
   '@expo-google-fonts/material-symbols@0.4.45': {}
+
+  '@expo-google-fonts/plus-jakarta-sans@0.4.2': {}
 
   '@expo/cli@57.0.20(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.14)(expo-constants@57.0.16)(expo-font@57.0.2)(expo-router@57.0.17)(expo@57.0.18)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/metro-config@0.86.3(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@5.9.3)':
     dependencies:
