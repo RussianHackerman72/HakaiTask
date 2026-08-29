@@ -242,7 +242,7 @@ function Composer({
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   /** Kosong kalau belum ada yang bisa dibersihin. */
   onClear?: () => void;
 }) {
