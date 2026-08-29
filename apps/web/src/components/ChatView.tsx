@@ -16,7 +16,7 @@ import {
   saveHistory,
   useVocab,
   type StoredMessage,
-} from "../lib/chat.js";
+} from "@hakaitask/app/chat";
 import { respond } from "@hakaitask/core/chat";
 
 /**

@@ -12,6 +12,7 @@
   "dependencies": {
     "@fontsource/geist-mono": "^5.1.1",
     "@fontsource/plus-jakarta-sans": "^5.1.1",
+    "@hakaitask/app": "workspace:*",
     "@hakaitask/core": "workspace:*",
     "@hakaitask/tokens": "workspace:*",
     "@supabase/supabase-js": "^2.47.10",

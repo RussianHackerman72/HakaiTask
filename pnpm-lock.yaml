@@ -29,6 +29,9 @@ importers:
       '@fontsource/plus-jakarta-sans':
         specifier: ^5.1.1
         version: 5.3.0
+      '@hakaitask/app':
+        specifier: workspace:*
+        version: link:../../packages/app
       '@hakaitask/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -81,6 +84,31 @@ importers:
       vite:
         specifier: ^6.0.5
         version: 6.4.3(@types/node@22.20.1)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  packages/app:
+    dependencies:
+      '@hakaitask/core':
+        specifier: workspace:*
+        version: link:../core
+      zustand:
+        specifier: ^5.0.2
+        version: 5.0.14(@types/react@19.2.18)(react@19.2.3)
+    devDependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.47.10
+        version: 2.112.1
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.18
+      react:
+        specifier: 19.2.3
+        version: 19.2.3
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   packages/core:
     dependencies:
