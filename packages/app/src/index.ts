@@ -7,5 +7,6 @@ export * from "./format.js";
 export * from "./calendar.js";
 export * from "./select.js";
 export * from "./theme.js";
+export * from "./user.js";
 export * from "./tasks.js";
 export * from "./time.js";

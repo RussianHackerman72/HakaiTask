@@ -1,112 +1,178 @@
 /**
- * Galeri primitif — layar verifikasi tahap 5.
+ * Halaman utama — antarmuka perintah bahasa alami (PLAN-CHAT.md §1).
  *
- * Tiap primitif dirender di sini biar bisa dicek dua-duanya, terang & gelap,
- * tanpa nunggu layar aslinya jadi. Sekalian ngebuktiin `openingMessage()`
- * jalan dari core dan MMKV masih nyimpen antar restart.
+ * Ini BUKAN asisten. Semua kalimat sistem berasal dari template di
+ * `respond.ts`, dan seluruh keputusan diambil `chatTurn()` yang MURNI. Yang
+ * dikerjain layar ini cuma tiga: nampilin, nerusin ketikan, dan ngejalanin
+ * efek yang dibalikin mesin — sama persis kayak versi web.
  */
-import { useMemo, useState } from "react";
-import { ScrollView, View } from "react-native";
-import { openingMessage } from "@hakaitask/core/chat";
-import { makeTask } from "@hakaitask/core";
-import { useKaiStore } from "@hakaitask/core/store";
-import { newId, useTasks } from "@hakaitask/app/tasks";
-import { headerDate, clock, whenLabel } from "@hakaitask/app/format";
-import { Card, Chip, IconButton, Pill, Screen, Switch, T, Tappable } from "../src/ui";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from "react-native";
+import { useRouter } from "expo-router";
+import {
+  chatTurn,
+  openingMessage,
+  type DateRange,
+  type Pending,
+  type Ref,
+} from "@hakaitask/core/chat";
+import {
+  applyEffect,
+  clearHistory,
+  loadHistory,
+  saveHistory,
+  useVocab,
+  type StoredMessage,
+} from "@hakaitask/app/chat";
+import { useBusyBlocks, useTasks } from "@hakaitask/app/tasks";
+import { DEFAULT_USER_NAME, localUserId, useNow } from "@hakaitask/app";
+import { headerDate } from "@hakaitask/app/format";
+import { Screen } from "../src/ui/Screen";
+import { T } from "../src/ui/T";
 import { useTheme, useThemePref } from "../src/theme";
+import { Bubble } from "../src/components/Bubble";
+import { Composer } from "../src/components/Composer";
+import { Switch } from "../src/ui/Switch";
 
-export default function Gallery() {
+export default function Chat() {
   const th = useTheme();
-  const { toggle, pref } = useThemePref();
-  const [now] = useState(() => new Date());
-  const [chipOn, setChipOn] = useState(true);
-  const [sw, setSw] = useState(false);
+  const { toggle } = useThemePref();
+  const router = useRouter();
+  const now = useNow();
   const tasks = useTasks();
+  const blocks = useBusyBlocks();
+  const vocab = useVocab();
+  const userId = useMemo(() => localUserId(), []);
+  const userName = DEFAULT_USER_NAME;
 
-  const salam = useMemo(
-    () => openingMessage({ now, tasks, blocks: [], userName: "Kai" }).text,
-    [now, tasks],
+  // MMKV itu sinkron, jadi riwayatnya kebaca langsung pas state dibikin —
+  // gak ada jeda "kosong dulu baru keisi" yang bisa ketimpa simpanan kosong.
+  const [messages, setMessages] = useState<StoredMessage[]>(() => loadHistory());
+  const [pending, setPending] = useState<Pending>(null);
+  // Hari yang lagi dibahas, biar "hapus semua task di hari itu" nyambung ke
+  // pertanyaan sebelumnya. Sengaja gak ikut disimpan: konteks percakapan
+  // hilang begitu app ditutup, sama seperti pending.
+  const [lastRange, setLastRange] = useState<DateRange | undefined>(undefined);
+  const [value, setValue] = useState("");
+
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  // Sapaan pembuka dihitung ulang tiap app dibuka & gak pernah disimpan (§2).
+  // Sengaja cuma bergantung ke userName: `now` berdetak tiap menit dan bakal
+  // bikin sapaannya nulis ulang terus.
+  const opening = useMemo(
+    () => openingMessage({ now, tasks, blocks, userName }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userName],
   );
 
-  const g = th.space[3];
+  useEffect(() => {
+    saveHistory(messages);
+  }, [messages]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [messages.length]);
+
+  const send = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+
+      // `now` diambil SAAT KIRIM, bukan dari state — sesi yang kebuka lewat
+      // tengah malam bakal salah ngartiin "hari ini" (E9).
+      const at = new Date();
+
+      const turn = chatTurn(trimmed, {
+        now: at,
+        tasks,
+        blocks,
+        vocab,
+        pending,
+        userName,
+        ...(lastRange ? { lastRange } : {}),
+      });
+
+      for (const effect of turn.effects) applyEffect(effect, userId);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", text: trimmed, at: at.getTime() },
+        ...turn.messages.map((m) => ({ ...m, at: at.getTime() })),
+      ]);
+      setPending(turn.pending);
+      setLastRange(turn.lastRange);
+      setValue("");
+    },
+    [tasks, blocks, vocab, pending, lastRange, userName, userId],
+  );
+
+  /**
+   * Bersihin percakapan. Pending dan `lastRange` WAJIB ikut direset — kalau
+   * enggak, sisa "yang mana?" atau "hari itu" dari percakapan yang udah ilang
+   * dari layar masih nempel diam-diam dan bikin balasan berikutnya aneh.
+   */
+  const clear = useCallback(() => {
+    setMessages([]);
+    setPending(null);
+    setLastRange(undefined);
+    clearHistory();
+  }, []);
+
+  const openRef = useCallback(
+    (ref: Ref) => {
+      if (ref.kind !== "task") return;
+      router.push(`/task/${ref.id}`);
+    },
+    [router],
+  );
+
+  const shown = messages.length > 0 ? messages : [{ ...opening, at: now.getTime() }];
 
   return (
-    <Screen>
-      <ScrollView contentContainerStyle={{ paddingVertical: th.space[4], gap: g }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+    <Screen pad={false}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: th.space[4],
+            paddingBottom: th.space[2],
+          }}
+        >
           <T variant="meta" tone="ink40">{headerDate(now)}</T>
-          <T variant="num" tone="ink40" tabular>{clock(now)}</T>
+          <Switch value={th.scheme === "dark"} onChange={toggle} />
         </View>
 
-        <T variant="display">Selamat datang.</T>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={{
+            paddingHorizontal: th.space[4],
+            paddingBottom: th.space[4],
+            gap: th.space[2],
+          }}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}
+        >
+          {shown.map((m, i) => (
+            <Bubble key={`${m.at}-${i}`} message={m} onOpenRef={openRef} onPick={send} />
+          ))}
+        </ScrollView>
 
-        <Card>
-          <T variant="body">{salam}</T>
-        </Card>
-
-        <T variant="meta" tone="ink40">Tipografi</T>
-        <Card style={{ gap: 6 }}>
-          <T variant="h1">Judul besar</T>
-          <T variant="h2">Judul sedang</T>
-          <T variant="body">Teks isi — 16px, tinggi baris 24.</T>
-          <T variant="bodySm" tone="ink70">Teks kecil, ink70.</T>
-          <T variant="meta" tone="ink40">Label meta</T>
-          <T variant="num" tabular>09:41 · 1234567890</T>
-          <T variant="mono">mono 13px</T>
-          <T variant="body" tone="accent">Aksen — cuma buat telat & P1</T>
-        </Card>
-
-        <T variant="meta" tone="ink40">Tombol</T>
-        <View style={{ gap: g }}>
-          <Pill label="Tombol utama" onPress={() => {}} />
-          <Pill label="Tombol lembut" tone="soft" onPress={() => {}} />
-          <Pill label="Nonaktif" disabled />
-        </View>
-
-        <T variant="meta" tone="ink40">Chip</T>
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          <Chip label="Aktif" active={chipOn} onPress={() => setChipOn(true)} />
-          <Chip label="Pasif" active={!chipOn} onPress={() => setChipOn(false)} />
-          <Chip label="#konten" />
-        </View>
-
-        <T variant="meta" tone="ink40">Ikon & switch</T>
-        <Card style={{ flexDirection: "row", alignItems: "center", gap: g }}>
-          <IconButton onPress={() => {}}><T variant="body">＋</T></IconButton>
-          <IconButton on="paper" onPress={() => {}}><T variant="body">✓</T></IconButton>
-          <View style={{ flex: 1 }} />
-          <Switch value={sw} onChange={setSw} />
-        </Card>
-
-        <T variant="meta" tone="ink40">Tema — sekarang: {pref} ({th.scheme})</T>
-        <Pill label="Ganti terang / gelap" tone="soft" onPress={toggle} />
-
-        <T variant="meta" tone="ink40">Uji simpan ({tasks.length} task)</T>
-        <Pill
-          label="Tambah task uji"
-          onPress={() =>
-            useKaiStore.getState().upsertTask(
-              makeTask({
-                id: newId(),
-                userId: "local",
-                title: `Uji ${clock(new Date())}`,
-                allDay: false,
-                tags: [],
-                subtasks: [],
-                dueAt: new Date(Date.now() + 86_400_000).toISOString(),
-              }),
-            )
-          }
+        <Composer
+          value={value}
+          onChange={setValue}
+          onSubmit={() => send(value)}
+          inputRef={inputRef}
+          {...(messages.length > 0 ? { onClear: clear } : {})}
         />
-        {tasks.map((t) => (
-          <Tappable key={t.id} onPress={() => {}}>
-            <Card style={{ borderRadius: th.radius.sm, paddingVertical: 12 }}>
-              <T variant="body">{t.title}</T>
-              <T variant="meta" tone="ink40">{whenLabel(t.dueAt, now, t.allDay)}</T>
-            </Card>
-          </Tappable>
-        ))}
-      </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }
