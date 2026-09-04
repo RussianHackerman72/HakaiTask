@@ -81,22 +81,28 @@ export function Composer({
         {filled && <Pill label="Kirim" onPress={onSubmit} style={{ paddingVertical: 8 }} />}
       </View>
 
-      {/* Contoh yang bisa diketuk — jauh lebih kepake daripada dokumentasi (§10). */}
+      {/*
+        Contoh yang bisa diketuk — jauh lebih kepake daripada dokumentasi (§10).
+
+        Ditumpuk ke BAWAH, bukan `flexWrap` menyamping, dan tiap chip
+        direntangin selebar kolom. Waktu pakai wrap, chip yang isinya kepanjang
+        dikit (40 huruf lawan 39) melar ngelewatin baris dan huruf terakhirnya
+        KEPOTONG — "besok jam 3" jadi "besok jam". Dikasih lebar pasti,
+        teksnya tinggal pindah baris kayak teks biasa.
+      */}
       {!filled && (
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+        <View style={{ gap: 6, alignItems: "flex-start" }}>
           {respond.HELP_EXAMPLES.slice(0, 3).map((e) => (
             <Tappable
               key={e}
               onPress={() => onChange(e)}
               style={{
+                alignSelf: "stretch",
                 backgroundColor: th.c.surface,
-                borderRadius: th.radius.full,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
-                minHeight: 32,
-                // Tanpa ini chip-nya melar ngelewatin baris dan teksnya
-                // KEPOTONG, bukan pindah baris — "besok jam 3" ilang 3-nya.
-                maxWidth: "100%",
+                borderRadius: th.radius.md,
+                paddingHorizontal: 14,
+                paddingVertical: 8,
+                minHeight: 36,
               }}
             >
               <T variant="num" tone="ink70">{e}</T>
