@@ -7,15 +7,59 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d9117084-40b5-434e-97a4-0d7289f09677",
+      "fallbackToCacheTimeout": 0
+    },
     "android": {
-      "package": "com.kai.hakaitask"
+      "package": "com.kai.hakaitask",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.VIBRATE"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-status-bar",
       "expo-font",
       "expo-dev-client",
-      "expo-system-ui"
+      "expo-system-ui",
+      "expo-updates",
+      "expo-notifications",
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-share-intent",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "HaKaiTask perlu mikrofon buat ngubah suara kamu jadi teks perintah.",
+          "speechRecognitionPermission": "HaKaiTask perlu izin ini buat ngerti kalimat yang kamu ucapin.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Fokus",
+              "label": "HaKaiTask — Fokus",
+              "minWidth": "180dp",
+              "minHeight": "80dp",
+              "description": "Task utama kamu hari ini",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -26,6 +70,10 @@
       "eas": {
         "projectId": "d9117084-40b5-434e-97a4-0d7289f09677"
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.kai.hakaitask",
+      "supportsTablet": false
     }
   }
 }

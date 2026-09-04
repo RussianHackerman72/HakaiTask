@@ -5,6 +5,9 @@ allowBuilds:
   # esbuild dipakai vitest buat transpile TS — perlu build script native.
   esbuild: true
 
+minimumReleaseAgeExclude:
+  - expo-notifications@57.0.17
+
 # Satu versi React buat seluruh workspace. Bukan sekadar rapi-rapi: dua salinan
 # React di satu bundle bikin "invalid hook call", dan itu paling gampang kejadian
 # pas Metro nyusuri symlink pnpm ke packages/*. Versinya ngikut Expo SDK 57.
