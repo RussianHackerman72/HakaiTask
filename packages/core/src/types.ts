@@ -96,7 +96,7 @@ export interface FocusSession {
   endedAt?: ISODate;
   minutes?: number;
   interruptions: number;
-  mode: "pomodoro" | "stopwatch";
+  mode: "pomodoro" | "deep" | "stopwatch";
 }
 
 export interface UserSettings {

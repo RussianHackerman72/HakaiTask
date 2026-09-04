@@ -2,7 +2,7 @@
  * Terjemahan Task (camelCase, core) ↔ baris Postgres (snake_case, §3.2).
  * Satu-satunya tempat nama kolom ditulis — kalau skema berubah, cuma file ini.
  */
-import type { BusyBlock, Task, UserLexiconEntry } from "@hakaitask/core";
+import type { BusyBlock, FocusSession, Task, UserLexiconEntry } from "@hakaitask/core";
 
 const TO_COLUMN: Record<string, string> = {
   id: "id",
@@ -117,5 +117,35 @@ export function lexiconFromRow(row: TaskRow): UserLexiconEntry {
     createdAt: String(row.created_at ?? new Date().toISOString()),
     ...(row.updated_at ? { updatedAt: String(row.updated_at) } : {}),
     ...(row.deleted_at ? { deletedAt: String(row.deleted_at) } : {}),
+  };
+}
+
+// ── focus_sessions ───────────────────────────────────────────────────────────
+
+export function focusToRow(f: FocusSession): TaskRow {
+  return {
+    id: f.id,
+    user_id: f.userId,
+    task_id: f.taskId ?? null,
+    started_at: f.startedAt,
+    ended_at: f.endedAt ?? null,
+    minutes: f.minutes ?? null,
+    interruptions: f.interruptions,
+    mode: f.mode,
+  };
+}
+
+export function focusFromRow(row: TaskRow): FocusSession {
+  return {
+    id: String(row.id),
+    userId: String(row.user_id),
+    ...(row.task_id ? { taskId: String(row.task_id) } : {}),
+    startedAt: String(row.started_at),
+    ...(row.ended_at ? { endedAt: String(row.ended_at) } : {}),
+    ...(row.minutes !== null && row.minutes !== undefined
+      ? { minutes: Number(row.minutes) }
+      : {}),
+    interruptions: Number(row.interruptions ?? 0),
+    mode: (row.mode as FocusSession["mode"]) ?? "pomodoro",
   };
 }

@@ -9,6 +9,8 @@ import {
   blockToRow,
   fromRow,
   lexiconFromRow,
+  focusFromRow,
+  focusToRow,
   lexiconToRow,
   toRow,
   type TaskRow,
@@ -42,6 +44,19 @@ export const ENTITIES: Partial<Record<EntityKind, EntitySync>> = {
       return b ? blockToRow(b) : null;
     },
     merge: (row) => useKaiStore.getState().mergeRemoteBlock(blockFromRow(row)),
+  },
+  focus_session: {
+    table: "focus_sessions",
+    snapshot: (id) => {
+      const f = useKaiStore.getState().focusSessions[id];
+      return f ? focusToRow(f) : null;
+    },
+    merge: (row) => {
+      const s = focusFromRow(row);
+      useKaiStore.getState().mergeRemoteFocusSession(s);
+      // Sesi baru dari device lain ngubah total menit task-nya.
+      if (s.taskId) useKaiStore.getState().recomputeActualMin(s.taskId);
+    },
   },
   lexicon: {
     table: "user_lexicon",

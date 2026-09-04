@@ -68,7 +68,8 @@ function writeLastPull(table: string, iso: string): void {
 async function push(client: SupabaseClient, mutation: Mutation, userId: string): Promise<void> {
   const spec = ENTITIES[mutation.entity];
   // Entitas yang belum disinkronkan (project, settings) di-ack diam-diam,
-  // bukan bikin antrean mampet selamanya.
+  // bukan bikin antrean mampet selamanya. focus_session UDAH disinkronkan
+  // sejak tahap 12, jadi dia gak lagi masuk sini.
   if (!spec) return;
 
   if (mutation.op === "delete") {

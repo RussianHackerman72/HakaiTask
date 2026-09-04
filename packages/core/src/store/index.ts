@@ -9,11 +9,13 @@ import { persist, createJSONStorage, type StateStorage } from "zustand/middlewar
 import type {
   BusyBlock,
   Energy,
+  FocusSession,
   Project,
   Task,
   UserLexiconEntry,
   UserSettings,
 } from "../types.js";
+import { sumActualMin, type FocusState } from "../focus/index.js";
 import { DEFAULT_SETTINGS } from "../types.js";
 import {
   ack,
@@ -34,6 +36,9 @@ export interface KaiState {
   /** Kamus pribadi, dikunci per `id` (PLAN-VOCAB §8). */
   lexicon: Record<string, UserLexiconEntry>;
   settings: UserSettings | null;
+  /** Timer yang lagi jalan. `null` = gak lagi fokus. */
+  focus: FocusState | null;
+  focusSessions: Record<string, FocusSession>;
   fieldTimes: Record<string, Record<string, string>>;
   outbox: OutboxState;
   online: boolean;
@@ -52,6 +57,12 @@ export interface KaiState {
   removeLexicon: (id: string) => void;
   mergeRemoteLexicon: (remote: UserLexiconEntry) => void;
   setSettings: (settings: UserSettings) => void;
+  /** Timer cuma keadaan lokal — gak pernah masuk outbox. */
+  setFocus: (focus: FocusState | null) => void;
+  upsertFocusSession: (session: FocusSession) => void;
+  mergeRemoteFocusSession: (remote: FocusSession) => void;
+  /** Hitung ulang `actualMin` dari daftar sesi. JANGAN pernah dinaikin. */
+  recomputeActualMin: (taskId: string) => void;
   setHydrated: () => void;
   setOnline: (online: boolean) => void;
   ackMutation: (id: string) => void;
@@ -124,6 +135,8 @@ export const useKaiStore = create<KaiState>()(
       busyBlocks: {},
       lexicon: {},
       settings: null,
+      focus: null,
+      focusSessions: {},
       fieldTimes: {},
       outbox: emptyOutbox(),
       online: true,
@@ -247,6 +260,50 @@ export const useKaiStore = create<KaiState>()(
           return { busyBlocks: { ...s.busyBlocks, [remote.id]: remote } };
         }),
 
+      /**
+       * Timer yang lagi jalan sengaja TIDAK disinkronkan: dia keadaan device
+       * ini, dan dua HP yang lagi ngitung mundur barengan gak ada artinya.
+       * Yang disinkronkan cuma HASILNYA — baris di `focusSessions`.
+       */
+      setFocus: (focus) => set({ focus }),
+
+      upsertFocusSession: (session) => {
+        const at = nowIso();
+        set((s) => ({
+          focusSessions: { ...s.focusSessions, [session.id]: session },
+          outbox: enqueue(
+            s.outbox,
+            mutation(
+              session.id,
+              s.focusSessions[session.id] ? "update" : "create",
+              { ...session },
+              at,
+              "focus_session",
+            ),
+          ),
+        }));
+      },
+
+      /**
+       * LWW per BARIS, sama kayak busyBlocks. Sesi fokus itu satu kesatuan —
+       * `minutes` dari satu device nyampur sama `interruptions` dari device
+       * lain gak akan pernah bener.
+       */
+      mergeRemoteFocusSession: (remote) =>
+        set((s) => ({ focusSessions: { ...s.focusSessions, [remote.id]: remote } })),
+
+      /**
+       * `actualMin` itu CACHE dari jumlah, bukan penghitung. Kalau dinaikin
+       * (`+= menit`), LWW per field bakal milih salah satu dari dua device dan
+       * menit yang satunya HILANG diam-diam. Dihitung ulang, dua device selalu
+       * ketemu angka yang sama.
+       */
+      recomputeActualMin: (taskId) => {
+        const total = sumActualMin(Object.values(get().focusSessions), taskId);
+        if (get().tasks[taskId]?.actualMin === total) return;
+        get().patchTask(taskId, { actualMin: total });
+      },
+
       upsertLexicon: (entry) => {
         const at = nowIso();
         const next: UserLexiconEntry = { ...entry, updatedAt: at };
@@ -297,6 +354,9 @@ export const useKaiStore = create<KaiState>()(
         busyBlocks: s.busyBlocks,
         lexicon: s.lexicon,
         settings: s.settings,
+        // `focus` ikut disimpan: itu yang bikin timer selamat dari app di-kill.
+        focus: s.focus,
+        focusSessions: s.focusSessions,
         fieldTimes: s.fieldTimes,
         outbox: s.outbox,
       }),
