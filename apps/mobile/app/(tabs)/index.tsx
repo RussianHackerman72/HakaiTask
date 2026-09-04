@@ -25,7 +25,8 @@ import {
   type StoredMessage,
 } from "@hakaitask/app/chat";
 import { useBusyBlocks, useTasks } from "@hakaitask/app/tasks";
-import { DEFAULT_USER_NAME, localUserId, useNow } from "@hakaitask/app";
+import { useNow } from "@hakaitask/app";
+import { useIdentity } from "../../src/auth";
 import { headerDate } from "@hakaitask/app/format";
 import { Screen } from "../../src/ui/Screen";
 import { T } from "../../src/ui/T";
@@ -33,6 +34,7 @@ import { useTheme, useThemePref } from "../../src/theme";
 import { Bubble } from "../../src/components/Bubble";
 import { Composer } from "../../src/components/Composer";
 import { Switch } from "../../src/ui/Switch";
+import { Tappable } from "../../src/ui/Pressable";
 
 export default function Chat() {
   const th = useTheme();
@@ -43,8 +45,7 @@ export default function Chat() {
   const tasks = useTasks();
   const blocks = useBusyBlocks();
   const vocab = useVocab();
-  const userId = useMemo(() => localUserId(), []);
-  const userName = DEFAULT_USER_NAME;
+  const { userId, userName, signedIn } = useIdentity();
 
   // MMKV itu sinkron, jadi riwayatnya kebaca langsung pas state dibikin —
   // gak ada jeda "kosong dulu baru keisi" yang bisa ketimpa simpanan kosong.
@@ -156,7 +157,22 @@ export default function Chat() {
           }}
         >
           <T variant="meta" tone="ink40">{headerDate(now)}</T>
-          <Switch value={th.scheme === "dark"} onChange={toggle} />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: th.space[2] }}>
+            {!signedIn && (
+              <Tappable
+                onPress={() => router.push("/sign-in")}
+                style={{
+                  backgroundColor: th.c.surface,
+                  borderRadius: th.radius.full,
+                  paddingHorizontal: 12,
+                  minHeight: 32,
+                }}
+              >
+                <T variant="num" tone="ink70">Masuk</T>
+              </Tappable>
+            )}
+            <Switch value={th.scheme === "dark"} onChange={toggle} />
+          </View>
         </View>
 
         <ScrollView

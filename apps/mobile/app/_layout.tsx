@@ -18,6 +18,8 @@ import { configureStorage } from "@hakaitask/core/store";
 import { configurePlatform } from "@hakaitask/app";
 import { mobilePlatform, mobileStorage } from "../src/platform";
 import { ThemeProvider, useTheme } from "../src/theme";
+import { useAuth } from "../src/auth";
+import { useSync } from "../src/sync";
 
 // Sinkron dan idempoten, jadi aman dipanggil saat modul dievaluasi — posisinya
 // sama kayak `main.tsx` di web, sebelum store kesentuh siapa pun.
@@ -56,6 +58,15 @@ export default function RootLayout() {
 /** Di dalam provider, biar warna bar-nya ikut tema. */
 function Chrome() {
   const th = useTheme();
+  const auth = useAuth();
+
+  /**
+   * Sync cuma jalan kalau beneran login. Keadaan `"local"` sengaja TIDAK
+   * nyalain sync: id-nya cuma hidup di device ini, jadi ngirim ke server
+   * malah bikin baris yatim yang gak akan pernah kebaca lagi.
+   */
+  useSync(auth.state === "signed-in" ? auth.userId : null);
+
   return (
     <>
       <StatusBar style={th.scheme === "dark" ? "light" : "dark"} />
@@ -64,7 +75,9 @@ function Chrome() {
           headerShown: false,
           contentStyle: { backgroundColor: th.c.paper },
         }}
-      />
+      >
+        <Stack.Screen name="task/[id]" options={{ presentation: "modal" }} />
+      </Stack>
     </>
   );
 }
