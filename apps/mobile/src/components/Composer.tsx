@@ -94,6 +94,9 @@ export function Composer({
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 minHeight: 32,
+                // Tanpa ini chip-nya melar ngelewatin baris dan teksnya
+                // KEPOTONG, bukan pindah baris — "besok jam 3" ilang 3-nya.
+                maxWidth: "100%",
               }}
             >
               <T variant="num" tone="ink70">{e}</T>

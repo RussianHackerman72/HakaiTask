@@ -3,7 +3,7 @@
  * dan yang didapat dari masuk cuma satu — sync lintas perangkat.
  */
 import { useState } from "react";
-import { TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "../src/ui/Screen";
 import { T } from "../src/ui/T";
@@ -19,7 +19,15 @@ export default function SignIn() {
 
   return (
     <Screen>
-      <View style={{ flex: 1, justifyContent: "center", gap: th.space[3] }}>
+      {/* Tanpa ini keyboard nutupin tombol "pakai lokal dulu" di HP layar kecil. */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: "center", gap: th.space[3] }}
+          keyboardShouldPersistTaps="handled"
+        >
         <T variant="display">HaKaiTask</T>
         <T variant="body" tone="ink70">
           Masuk buat nyimpen task kamu lintas perangkat. Datanya tetap ada di HP walau
@@ -77,7 +85,8 @@ export default function SignIn() {
           style={{ marginTop: th.space[4] }}
           onPress={() => router.replace("/(tabs)")}
         />
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </Screen>
   );
 }

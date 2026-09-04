@@ -73,7 +73,9 @@ const TABLES = [
 ];
 let missing = 0;
 for (const t of TABLES) {
-  const { error } = await db.from(t).select("id", { count: "exact", head: true });
+  // `*`, bukan `id`: user_settings kuncinya `user_id` dan gak punya kolom `id`
+  // sama sekali, jadi nanya `id` bikin tabel yang sehat kelihatan rusak.
+  const { error } = await db.from(t).select("*", { count: "exact", head: true });
   if (error && /does not exist|schema cache/i.test(error.message)) {
     bad(`${t} — belum ada. Migrasinya udah dijalanin semua?`);
     missing++;

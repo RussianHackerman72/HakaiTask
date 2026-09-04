@@ -62,30 +62,28 @@ export default function Calendar() {
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ paddingVertical: th.space[3], gap: th.space[4] }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: th.space[2],
-          }}
-        >
-          <T variant="h1" style={{ fontSize: 28, flex: 1 }} numberOfLines={1}>
-            {monthLabel(viewMonth)}
-          </T>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Nav label="‹" onPress={() => setViewMonth((m) => addMonths(m, -1))} />
-            <Pill
-              label="Hari ini"
-              tone="soft"
-              style={{ paddingVertical: 8, paddingHorizontal: 14 }}
-              onPress={() => {
-                setViewMonth(new Date(now.getFullYear(), now.getMonth(), 1));
-                setSelected(new Date(now));
-              }}
-            />
-            <Nav label="›" onPress={() => setViewMonth((m) => addMonths(m, 1))} />
-          </View>
+        {/*
+          Judul bulan dikasih BARIS SENDIRI, bukan rebutan sama tombol navigasi.
+          Waktu satu baris, "September 2026" kepotong jadi "September …" di
+          layar 1080px — tombolnya makan ~390px dan sisanya gak cukup.
+        */}
+        <T variant="h1" style={{ fontSize: 28 }} numberOfLines={1}>
+          {monthLabel(viewMonth)}
+        </T>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Nav label="‹" onPress={() => setViewMonth((m) => addMonths(m, -1))} />
+          <Pill
+            label="Hari ini"
+            tone="soft"
+            style={{ paddingVertical: 8, paddingHorizontal: 14 }}
+            onPress={() => {
+              setViewMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+              setSelected(new Date(now));
+            }}
+          />
+          <Nav label="›" onPress={() => setViewMonth((m) => addMonths(m, 1))} />
+          <View style={{ flex: 1 }} />
         </View>
 
         <Card style={{ padding: th.space[2] }}>
