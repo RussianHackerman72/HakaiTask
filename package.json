@@ -8,9 +8,11 @@
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "test:watch": "pnpm --filter @hakaitask/core test:watch"
+    "test:watch": "pnpm --filter @hakaitask/core test:watch",
+    "check:supabase": "node scripts/check-supabase.mjs"
   },
   "devDependencies": {
+    "@supabase/supabase-js": "^2.114.0",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   },
