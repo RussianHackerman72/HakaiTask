@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   chatTurn,
   openingMessage,
@@ -27,17 +27,18 @@ import {
 import { useBusyBlocks, useTasks } from "@hakaitask/app/tasks";
 import { DEFAULT_USER_NAME, localUserId, useNow } from "@hakaitask/app";
 import { headerDate } from "@hakaitask/app/format";
-import { Screen } from "../src/ui/Screen";
-import { T } from "../src/ui/T";
-import { useTheme, useThemePref } from "../src/theme";
-import { Bubble } from "../src/components/Bubble";
-import { Composer } from "../src/components/Composer";
-import { Switch } from "../src/ui/Switch";
+import { Screen } from "../../src/ui/Screen";
+import { T } from "../../src/ui/T";
+import { useTheme, useThemePref } from "../../src/theme";
+import { Bubble } from "../../src/components/Bubble";
+import { Composer } from "../../src/components/Composer";
+import { Switch } from "../../src/ui/Switch";
 
 export default function Chat() {
   const th = useTheme();
   const { toggle } = useThemePref();
   const router = useRouter();
+  const { draft } = useLocalSearchParams<{ draft?: string }>();
   const now = useNow();
   const tasks = useTasks();
   const blocks = useBusyBlocks();
@@ -74,6 +75,15 @@ export default function Chat() {
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [messages.length]);
+
+  // Titipan dari halaman lain: isi kolomnya, fokusin, lalu LEPAS titipannya
+  // biar gak keisi ulang tiap render — padanan `onDraftUsed()` di web.
+  useEffect(() => {
+    if (!draft) return;
+    setValue(draft);
+    inputRef.current?.focus();
+    router.setParams({ draft: undefined });
+  }, [draft, router]);
 
   const send = useCallback(
     (text: string) => {
