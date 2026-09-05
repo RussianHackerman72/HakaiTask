@@ -1,4 +1,8 @@
 node_modules/
 .expo/
-android/
-ios/
+
+# Diawali "/" biar CUMA folder hasil prebuild di akar app yang diabaikan.
+# Tanpa itu, polanya kena juga ke modules/focus-guard/android — dan kode
+# Kotlin-nya gak pernah ke-commit, jadi EAS ngebuild tanpa modulnya.
+/android/
+/ios/

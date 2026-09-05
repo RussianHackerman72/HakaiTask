@@ -1,0 +1,57 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+  <!--
+    PACKAGE_USAGE_STATS itu izin "appop", bukan izin runtime — `tools:ignore`
+    dipakai supaya lint gak nolak, dan user tetap harus nyalain di Setelan.
+  -->
+  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+                   tools:ignore="ProtectedPermissions" />
+  <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+  <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+                   tools:ignore="QueryAllPackagesPermission" />
+
+  <application>
+    <!--
+      Layanan latar depan. Android 14+ mewajibkan foregroundServiceType, dan
+      "specialUse" itu yang cocok: ini bukan pemutar musik, bukan lokasi, bukan
+      unduhan — dia nemenin sesi fokus yang user sendiri yang mulai.
+    -->
+    <service
+      android:name=".FocusGuardService"
+      android:exported="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Menemani sesi fokus yang dimulai pengguna dan memblokir aplikasi pengalih perhatian." />
+    </service>
+
+    <!--
+      AccessibilityService dipakai buat TAHU app apa yang lagi di depan.
+      Alternatifnya polling UsageStats tiap detik dari layanan latar depan —
+      lebih boros baterai dan telat beberapa detik, yang artinya user sempat
+      kebuka Instagram sebelum kehalang.
+    -->
+    <service
+      android:name=".BlockerAccessibilityService"
+      android:exported="false"
+      android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+      <intent-filter>
+        <action android:name="android.accessibilityservice.AccessibilityService" />
+      </intent-filter>
+      <meta-data
+        android:name="android.accessibilityservice"
+        android:resource="@xml/focus_guard_accessibility" />
+    </service>
+
+    <activity
+      android:name=".BlockedActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleInstance"
+      android:noHistory="true"
+      android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+  </application>
+</manifest>
