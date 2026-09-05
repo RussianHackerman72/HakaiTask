@@ -6,6 +6,7 @@
  * masalah yang dulu bikin navbar di web dibikin sticky.
  */
 import { TextInput, View } from "react-native";
+import { useVoice } from "../useVoice";
 import { respond } from "@hakaitask/core/chat";
 import { useTheme } from "../theme";
 import { T } from "../ui/T";
@@ -28,6 +29,18 @@ export function Composer({
 }) {
   const th = useTheme();
   const filled = value.trim().length > 0;
+
+  /**
+   * Hasil suara DISAMBUNG ke apa yang udah ada, bukan nimpa — orang sering
+   * ngetik separuh lalu males, dan kehilangan ketikan sendiri gara-gara mencet
+   * mik itu bikin fiturnya gak dipercaya.
+   *
+   * Dan yang paling penting: ini cuma NARUH TEKS. Gak ada `onSubmit()` di
+   * sini — salah dengar harus kelihatan dulu sebelum jadi data.
+   */
+  const voice = useVoice((text) => {
+    onChange(value.trim() ? value.trimEnd() + " " + text : text);
+  });
 
   return (
     <View style={{ paddingHorizontal: th.space[4], paddingBottom: th.space[3], gap: 8 }}>
@@ -78,8 +91,34 @@ export function Composer({
             fontFamily: "PlusJakartaSans_600SemiBold",
           }}
         />
+        <Tappable
+          onPress={() => (voice.listening ? voice.stop() : void voice.start())}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: th.radius.full,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: voice.listening ? th.c.accent : th.c.subtle,
+          }}
+        >
+          <T variant="body" style={{ color: voice.listening ? th.c.surface : th.c.ink70 }}>
+            ●
+          </T>
+        </Tappable>
+
         {filled && <Pill label="Kirim" onPress={onSubmit} style={{ paddingVertical: 8 }} />}
       </View>
+
+      {voice.listening || voice.partial ? (
+        <T variant="num" tone="ink40">
+          {voice.partial ? voice.partial : "Dengerin… ngomong aja."}
+        </T>
+      ) : null}
+
+      {voice.error ? (
+        <T variant="num" tone="accent">{voice.error}</T>
+      ) : null}
 
       {/*
         Contoh yang bisa diketuk — jauh lebih kepake daripada dokumentasi (§10).
