@@ -23,6 +23,10 @@ import { ThemeProvider, useTheme } from "../src/theme";
 import { useAuth } from "../src/auth";
 import { useSync } from "../src/sync";
 import { setupNotifications, syncNotifications } from "../src/notifications";
+import { useShareIntent } from "expo-share-intent";
+import { requestWidgetUpdate } from "react-native-android-widget";
+import { FokusWidget } from "../src/widget/FokusWidget";
+import { widgetProps } from "../src/widget/handler";
 import { useKaiStore } from "@hakaitask/core/store";
 import { DEFAULT_SETTINGS } from "@hakaitask/core";
 import { selectTasks } from "@hakaitask/app";
@@ -104,6 +108,25 @@ function Chrome() {
   }, [router]);
 
   /**
+   * Teks yang di-share dari app lain (§ backlog #23) mendarat di kolom chat
+   * sebagai TITIPAN, bukan langsung jadi task.
+   *
+   * Share itu memang sinyal eksplisit — tapi aturan "aba-aba wajib" tetap
+   * berlaku: link YouTube telanjang gak punya kata perintah dan gak punya
+   * waktu, jadi kalau langsung dibikin, judulnya jadi URL. Lewat kolom ketik,
+   * user tinggal nambahin "tonton" atau "besok jam 8" di depannya.
+   */
+  const share = useShareIntent({ resetOnBackground: true });
+
+  useEffect(() => {
+    if (!share.hasShareIntent) return;
+    const si = share.shareIntent;
+    const text = (si.webUrl ?? si.text ?? "").trim();
+    if (text) router.push({ pathname: "/(tabs)", params: { draft: text + " " } });
+    share.resetShareIntent();
+  }, [share, router]);
+
+  /**
    * Jadwal disamain ulang tiap task/setelan berubah DAN tiap app balik ke
    * depan — cakrawalanya cuma 7 hari (batas alarm Android), jadi dia harus
    * digeser maju terus.
@@ -122,6 +145,20 @@ function Chrome() {
     });
     return () => sub.remove();
   }, [tasks, settings, notifReady]);
+
+  /**
+   * Widget didorong dari app tiap task berubah. Tanpa ini dia cuma ikut
+   * `updatePeriodMillis` — dan lantai Android buat itu 30 menit, jadi task
+   * yang baru dicentang tetep nangkring di layar utama setengah jam.
+   */
+  useEffect(() => {
+    void requestWidgetUpdate({
+      widgetName: "Fokus",
+      renderWidget: () => <FokusWidget {...widgetProps(new Date())} />,
+    }).catch(() => {
+      // Belum ada widget yang dipasang — bukan error.
+    });
+  }, [tasks]);
 
   /**
    * Sync cuma jalan kalau beneran login. Keadaan `"local"` sengaja TIDAK
