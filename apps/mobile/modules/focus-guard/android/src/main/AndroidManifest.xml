@@ -10,8 +10,23 @@
   <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-  <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
-                   tools:ignore="QueryAllPackagesPermission" />
+
+  <!--
+    Buat daftar app yang bisa diblokir kita cuma butuh app yang PUNYA ikon di
+    launcher — persis yang dibalikin queryIntentActivities di listInstalledApps().
+    <queries> ngasih jendela sempit itu tanpa izin apa pun.
+
+    Sebelumnya di sini ada QUERY_ALL_PACKAGES. Itu izin yang Google golongin
+    sensitif, dan efeknya nyata: APK-nya kena tahan pas dipasang dengan alasan
+    "app ini bisa akses informasi sensitif". Lint sebenernya udah ngingetin,
+    cuma waktu itu peringatannya dibungkam pakai tools:ignore.
+  -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.MAIN" />
+      <category android:name="android.intent.category.LAUNCHER" />
+    </intent>
+  </queries>
 
   <application>
     <!--

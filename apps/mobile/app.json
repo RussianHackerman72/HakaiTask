@@ -25,8 +25,7 @@
         "android.permission.PACKAGE_USAGE_STATS",
         "android.permission.ACCESS_NOTIFICATION_POLICY",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE",
-        "android.permission.QUERY_ALL_PACKAGES"
+        "android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
       ]
     },
     "plugins": [
