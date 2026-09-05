@@ -10,7 +10,8 @@
     "./scoring": "./src/scoring.ts",
     "./store": "./src/store/index.ts",
     "./sync": "./src/sync/index.ts",
-    "./focus": "./src/focus/index.ts"
+    "./focus": "./src/focus/index.ts",
+    "./notify": "./src/notify/plan.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

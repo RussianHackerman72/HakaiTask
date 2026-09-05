@@ -19,6 +19,7 @@ import {
 } from "@hakaitask/core/focus";
 import { useKaiStore } from "@hakaitask/core/store";
 import { newId } from "@hakaitask/app/tasks";
+import { cancelTimerDone, scheduleTimerDone } from "./notifications";
 
 /** Nge-tick tiap 500ms — cukup buat detik yang mulus, hemat buat baterai. */
 function useTick(active: boolean): Date {
@@ -62,18 +63,27 @@ export function useFocusTimer(userId: string): FocusTimer {
           ...(settings ? { settings } : {}),
         }),
       );
+      const f = useKaiStore.getState().focus;
+      if (f) void scheduleTimerDone(f);
     },
     [settings],
   );
 
+  // Dijeda = gak ada yang perlu bunyi. Kalau notifnya dibiarin, dia bunyi
+  // di waktu yang udah gak nyambung sama apa pun yang kelihatan di layar.
   const pause = useCallback(() => {
     const f = useKaiStore.getState().focus;
-    if (f) useKaiStore.getState().setFocus(pauseFocus(f, new Date()));
+    if (!f) return;
+    useKaiStore.getState().setFocus(pauseFocus(f, new Date()));
+    void cancelTimerDone();
   }, []);
 
   const resume = useCallback(() => {
     const f = useKaiStore.getState().focus;
-    if (f) useKaiStore.getState().setFocus(resumeFocus(f, new Date()));
+    if (!f) return;
+    useKaiStore.getState().setFocus(resumeFocus(f, new Date()));
+    const next = useKaiStore.getState().focus;
+    if (next) void scheduleTimerDone(next);
   }, []);
 
   const interrupt = useCallback(() => {
@@ -102,6 +112,8 @@ export function useFocusTimer(userId: string): FocusTimer {
         if (r.session.taskId) store.recomputeActualMin(r.session.taskId);
       }
       store.setFocus(r.next);
+      if (r.next) void scheduleTimerDone(r.next);
+      else void cancelTimerDone();
     },
     [userId, settings],
   );

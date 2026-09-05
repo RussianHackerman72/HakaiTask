@@ -1,8 +1,10 @@
 // Wajib paling atas: supabase-js butuh URL/URLSearchParams yang gak ada di Hermes.
 import "react-native-url-polyfill/auto";
 
-import { useEffect, useState } from "react";
-import { Stack } from "expo-router";
+import { useEffect, useRef, useState } from "react";
+import { AppState } from "react-native";
+import { Stack, useRouter } from "expo-router";
+import * as Notifications from "expo-notifications";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -20,6 +22,10 @@ import { mobilePlatform, mobileStorage } from "../src/platform";
 import { ThemeProvider, useTheme } from "../src/theme";
 import { useAuth } from "../src/auth";
 import { useSync } from "../src/sync";
+import { setupNotifications, syncNotifications } from "../src/notifications";
+import { useKaiStore } from "@hakaitask/core/store";
+import { DEFAULT_SETTINGS } from "@hakaitask/core";
+import { selectTasks } from "@hakaitask/app";
 
 // Sinkron dan idempoten, jadi aman dipanggil saat modul dievaluasi — posisinya
 // sama kayak `main.tsx` di web, sebelum store kesentuh siapa pun.
@@ -59,6 +65,58 @@ export default function RootLayout() {
 function Chrome() {
   const th = useTheme();
   const auth = useAuth();
+  const router = useRouter();
+  const tasks = useKaiStore((s) => s.tasks);
+  const settings = useKaiStore((s) => s.settings);
+  const ready = useRef(false);
+
+  useEffect(() => {
+    void setupNotifications().then((ok) => {
+      ready.current = ok;
+    });
+  }, []);
+
+  /**
+   * Ketuk notifikasi → buka task-nya (§6.7 aturan 3).
+   *
+   * `getLastNotificationResponseAsync` itu yang gampang kelewat, padahal
+   * justru kasus PALING umum: pas pengingat bunyi, app-nya biasanya lagi
+   * mati. Tanpa itu, ngetuk notifikasi cuma buka halaman depan.
+   */
+  useEffect(() => {
+    const open = (id?: unknown) => {
+      if (typeof id === "string" && id) router.push(`/task/${id}`);
+    };
+
+    void Notifications.getLastNotificationResponseAsync().then((res) => {
+      open((res?.notification.request.content.data as { taskId?: string })?.taskId);
+    });
+
+    const sub = Notifications.addNotificationResponseReceivedListener((res) => {
+      open((res.notification.request.content.data as { taskId?: string })?.taskId);
+    });
+    return () => sub.remove();
+  }, [router]);
+
+  /**
+   * Jadwal disamain ulang tiap task/setelan berubah DAN tiap app balik ke
+   * depan — cakrawalanya cuma 7 hari (batas alarm Android), jadi dia harus
+   * digeser maju terus.
+   */
+  useEffect(() => {
+    const run = () => {
+      if (!ready.current) return;
+      void syncNotifications({
+        tasks: selectTasks(tasks),
+        settings: settings ?? { ...DEFAULT_SETTINGS, userId: "local" },
+      });
+    };
+    run();
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") run();
+    });
+    return () => sub.remove();
+  }, [tasks, settings]);
 
   /**
    * Sync cuma jalan kalau beneran login. Keadaan `"local"` sengaja TIDAK
