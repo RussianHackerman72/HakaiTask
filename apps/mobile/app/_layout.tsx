@@ -1,7 +1,7 @@
 // Wajib paling atas: supabase-js butuh URL/URLSearchParams yang gak ada di Hermes.
 import "react-native-url-polyfill/auto";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
@@ -68,12 +68,17 @@ function Chrome() {
   const router = useRouter();
   const tasks = useKaiStore((s) => s.tasks);
   const settings = useKaiStore((s) => s.settings);
-  const ready = useRef(false);
+  /**
+   * STATE, bukan ref. `setupNotifications()` itu async — pas efek penjadwalan
+   * jalan pertama kali, izinnya belum tentu kelar diminta. Kalau dibaca dari
+   * ref, jalan pertamanya kelewat diam-diam dan jadwalnya baru kepasang pas
+   * app di-background lalu dibuka lagi. Sebagai state, efeknya jalan ulang
+   * begitu izinnya beres.
+   */
+  const [notifReady, setNotifReady] = useState(false);
 
   useEffect(() => {
-    void setupNotifications().then((ok) => {
-      ready.current = ok;
-    });
+    void setupNotifications().then(setNotifReady);
   }, []);
 
   /**
@@ -104,8 +109,8 @@ function Chrome() {
    * digeser maju terus.
    */
   useEffect(() => {
+    if (!notifReady) return;
     const run = () => {
-      if (!ready.current) return;
       void syncNotifications({
         tasks: selectTasks(tasks),
         settings: settings ?? { ...DEFAULT_SETTINGS, userId: "local" },
@@ -116,7 +121,7 @@ function Chrome() {
       if (s === "active") run();
     });
     return () => sub.remove();
-  }, [tasks, settings]);
+  }, [tasks, settings, notifReady]);
 
   /**
    * Sync cuma jalan kalau beneran login. Keadaan `"local"` sengaja TIDAK
