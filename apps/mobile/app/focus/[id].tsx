@@ -40,7 +40,7 @@ export default function Focus() {
   const th = useTheme();
   const { userId } = useIdentity();
   const task = useKaiStore((s) => (id ? s.tasks[id] : undefined));
-  const timer = useFocusTimer(userId);
+  const timer = useFocusTimer(userId, task?.title ?? "Lagi fokus");
 
   // Layar gak boleh mati pas lagi ngitung — orang ngeliatin angkanya.
   useKeepAwake();
@@ -70,6 +70,11 @@ export default function Focus() {
                 <Chip key={m.mode} label={m.label} onPress={() => timer.start(m.mode, id)} />
               ))}
             </View>
+            <Pill
+              label="Atur app yang ditahan"
+              tone="soft"
+              onPress={() => router.push("/focus/setup")}
+            />
             <Pill label="Kembali" tone="soft" onPress={() => router.back()} />
           </>
         ) : (

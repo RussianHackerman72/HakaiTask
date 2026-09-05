@@ -20,6 +20,9 @@ import {
 import { useKaiStore } from "@hakaitask/core/store";
 import { newId } from "@hakaitask/app/tasks";
 import { cancelTimerDone, scheduleTimerDone } from "./notifications";
+import { startGuard, stopGuard } from "./guard";
+import { FocusGuard } from "../modules/focus-guard";
+import { endsAt as endsAtOf } from "@hakaitask/core/focus";
 
 /** Nge-tick tiap 500ms — cukup buat detik yang mulus, hemat buat baterai. */
 function useTick(active: boolean): Date {
@@ -44,7 +47,7 @@ export interface FocusTimer {
   finish: (stop?: boolean) => void;
 }
 
-export function useFocusTimer(userId: string): FocusTimer {
+export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer {
   const focus = useKaiStore((s) => s.focus);
   const settings = useKaiStore((s) => s.settings);
 
@@ -64,9 +67,14 @@ export function useFocusTimer(userId: string): FocusTimer {
         }),
       );
       const f = useKaiStore.getState().focus;
-      if (f) void scheduleTimerDone(f);
+      if (f) {
+        void scheduleTimerDone(f);
+        // Cuma pas kerja. Ngeblokir app pas lagi ISTIRAHAT itu justru ngelawan
+        // gunanya istirahat.
+        if (f.phase === "work") startGuard(f.taskId ? title : "Lagi fokus", endsAtOf(f));
+      }
     },
-    [settings],
+    [settings, title],
   );
 
   // Dijeda = gak ada yang perlu bunyi. Kalau notifnya dibiarin, dia bunyi
@@ -76,6 +84,8 @@ export function useFocusTimer(userId: string): FocusTimer {
     if (!f) return;
     useKaiStore.getState().setFocus(pauseFocus(f, new Date()));
     void cancelTimerDone();
+    // Dijeda = gak lagi fokus. Nahan app pas lagi jeda itu cuma nyebelin.
+    stopGuard();
   }, []);
 
   const resume = useCallback(() => {
@@ -83,7 +93,27 @@ export function useFocusTimer(userId: string): FocusTimer {
     if (!f) return;
     useKaiStore.getState().setFocus(resumeFocus(f, new Date()));
     const next = useKaiStore.getState().focus;
-    if (next) void scheduleTimerDone(next);
+    if (next) {
+      void scheduleTimerDone(next);
+      if (next.phase === "work") startGuard(title, endsAtOf(next));
+    }
+  }, [title]);
+
+  /**
+   * INI bagian yang bikin §6.3 jadi lebih jujur daripada rencananya.
+   *
+   * Tombol "terganggu" itu manual karena dulu gak ada cara ngukur gangguan.
+   * Sekarang tiap percobaan buka app yang diblokir kecatat SENDIRI — persis
+   * tujuan yang ditulis spec-nya ("datanya jauh lebih jujur daripada cuma
+   * total waktu"), lewat jalan yang lebih baik. Tombolnya tetap ada buat
+   * gangguan yang bukan salah HP.
+   */
+  useEffect(() => {
+    const sub = FocusGuard.addListener("onBlockedAttempt", () => {
+      const f = useKaiStore.getState().focus;
+      if (f) useKaiStore.getState().setFocus(markCore(f));
+    });
+    return () => sub.remove();
   }, []);
 
   const interrupt = useCallback(() => {
@@ -112,10 +142,16 @@ export function useFocusTimer(userId: string): FocusTimer {
         if (r.session.taskId) store.recomputeActualMin(r.session.taskId);
       }
       store.setFocus(r.next);
-      if (r.next) void scheduleTimerDone(r.next);
-      else void cancelTimerDone();
+      if (r.next) {
+        void scheduleTimerDone(r.next);
+        if (r.next.phase === "work") startGuard(title, endsAtOf(r.next));
+        else stopGuard();
+      } else {
+        void cancelTimerDone();
+        stopGuard();
+      }
     },
-    [userId, settings],
+    [userId, settings, title],
   );
 
   return {

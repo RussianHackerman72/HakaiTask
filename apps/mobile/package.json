@@ -52,5 +52,10 @@
     "babel-preset-expo": "~57.0.9",
     "dotenv": "^17.0.0",
     "typescript": "^5.7.2"
+  },
+  "expo": {
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    }
   }
 }
