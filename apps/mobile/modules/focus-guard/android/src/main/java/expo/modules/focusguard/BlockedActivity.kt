@@ -35,7 +35,7 @@ class BlockedActivity : Activity() {
 
     root.addView(
       TextView(this).apply {
-        text = "Lagi fokus."
+        text = JUDUL
         setTextColor(Color.parseColor("#F7F7F5"))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 28f)
         gravity = Gravity.CENTER
@@ -44,7 +44,7 @@ class BlockedActivity : Activity() {
 
     root.addView(
       TextView(this).apply {
-        text = FocusGuardService.currentTitle ?: "Balik lagi habis sesi ini."
+        text = subJudul()
         setTextColor(Color.parseColor("#A8A8AD"))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
         gravity = Gravity.CENTER
@@ -63,6 +63,19 @@ class BlockedActivity : Activity() {
     )
 
     setContentView(root)
+  }
+
+  /**
+   * Baris kedua gunanya ngingetin lagi ngerjain APA. Kalau sesinya gak
+   * nempel ke task mana pun, judulnya jatuh ke teks bawaan yang sama persis
+   * kayak baris pertama — dan layarnya jadi keliatan rusak, bukan tenang.
+   * Jadi judul yang gak nambah informasi diganti kalimat penenang biasa.
+   */
+  private fun subJudul(): String {
+    val judul = FocusGuardService.currentTitle?.trim()
+    val kosong = judul.isNullOrEmpty() ||
+      judul.trimEnd('.').equals(JUDUL.trimEnd('.'), ignoreCase = true)
+    return if (kosong) "Balik lagi habis sesi ini." else judul!!
   }
 
   /** Tombol back juga ke home, bukan balik ke app yang diblokir. */
@@ -85,6 +98,7 @@ class BlockedActivity : Activity() {
 
   companion object {
     const val EXTRA_PACKAGE = "blockedPackage"
+    private const val JUDUL = "Lagi fokus."
     private const val MATCH = ViewGroup.LayoutParams.MATCH_PARENT
   }
 }

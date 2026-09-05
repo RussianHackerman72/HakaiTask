@@ -18,9 +18,9 @@ object GuardState {
   private var blocked: Set<String> = emptySet()
 
   /**
-   * Jeda singkat sesudah satu blokiran biar layar penghalangnya gak dipanggil
-   * berkali-kali buat satu percobaan yang sama — satu kali buka app bisa
-   * ngeluarin beberapa event window.
+   * Kapan terakhir satu paket dihalang. Dipakai bareng `lastBlockedPackage`
+   * buat mutusin apakah sebuah event itu percobaan BARU atau masih sisa
+   * percobaan yang sama.
    */
   @Volatile
   private var lastBlockAt: Long = 0L
@@ -49,21 +49,39 @@ object GuardState {
   /**
    * Balikin true kalau paket ini harus dihalang SEKARANG.
    *
-   * Peredamnya per-paket, bukan global: kalau global, user yang kehalang di
-   * Instagram lalu langsung nyoba TikTok bakal lolos gara-gara masih dalam
-   * jendela peredam.
+   * Satuannya PERCOBAAN, bukan event. Sekali buka app bisa ngeluarin beberapa
+   * TYPE_WINDOW_STATE_CHANGED: app-nya naik, layar penghalang naik, app-nya
+   * sempat balik sebentar pas task-nya beres-beres. Diukur di emulator jarak
+   * antar-event itu bisa 2 detik lebih — jadi peredam waktu doang gak cukup,
+   * dan satu kali buka Chrome kehitung dua gangguan.
+   *
+   * Aturannya: selama belum ada app LAIN yang ke depan, itu masih percobaan
+   * yang sama. Begitu user pindah ke app yang gak diblokir (termasuk beranda,
+   * yang mana ke situ juga tombol di layar penghalang nganterin), hitungannya
+   * direset dan kunjungan berikutnya dihitung baru.
+   *
+   * Peredam waktunya disimpan sebagai jaring pengaman buat kasus event-nya
+   * nyusul jauh belakangan tanpa ada app lain di antaranya. Peredamnya
+   * per-paket, bukan global: kalau global, user yang kehalang di Instagram
+   * lalu langsung nyoba TikTok bakal lolos gara-gara masih dalam jendela.
    */
   fun shouldBlock(packageName: String, now: Long): Boolean {
     if (!guarding.get()) return false
-    if (!blocked.contains(packageName)) return false
 
-    val sama = packageName == lastBlockedPackage
-    if (sama && now - lastBlockAt < DEBOUNCE_MS) return false
+    if (!blocked.contains(packageName)) {
+      // App lain ke depan — percobaan sebelumnya dianggap kelar.
+      lastBlockedPackage = null
+      return false
+    }
+
+    val percobaanYangSama =
+      packageName == lastBlockedPackage && now - lastBlockAt < SAME_VISIT_MS
+    if (percobaanYangSama) return false
 
     lastBlockAt = now
     lastBlockedPackage = packageName
     return true
   }
 
-  private const val DEBOUNCE_MS = 1200L
+  private const val SAME_VISIT_MS = 5000L
 }
