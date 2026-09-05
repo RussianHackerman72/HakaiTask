@@ -50,11 +50,19 @@ export default function Dashboard() {
         <T variant="meta" tone="ink40">{headerDate(now)}</T>
 
         {focus.focus ? (
-          <FocusCard
-            task={focus.focus}
-            now={now}
-            onOpen={() => router.push(`/task/${focus.focus!.id}`)}
-          />
+          <>
+            <FocusCard
+              task={focus.focus}
+              now={now}
+              onOpen={() => router.push(`/task/${focus.focus!.id}`)}
+            />
+            {/* Jalan pintas: dari "apa sekarang?" langsung ke ngerjain. */}
+            <Pill
+              label="Mulai fokus"
+              onPress={() => router.push(`/focus/${focus.focus!.id}`)}
+              style={{ alignSelf: "flex-start" }}
+            />
+          </>
         ) : (
           <Empty doneToday={doneToday} onAdd={() => goChat("tambahin ")} />
         )}

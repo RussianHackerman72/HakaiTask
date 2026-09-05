@@ -115,6 +115,19 @@ export default function TaskDetail() {
           </T>
         ) : null}
 
+        <Section label="Fokus">
+          <View style={{ flexDirection: "row", alignItems: "center", gap: th.space[2] }}>
+            <Pill
+              label="Mulai fokus"
+              onPress={() => router.push("/focus/" + task.id)}
+              style={{ paddingVertical: 10, paddingHorizontal: 20 }}
+            />
+            {task.actualMin ? (
+              <T variant="num" tone="ink40">udah {task.actualMin} menit</T>
+            ) : null}
+          </View>
+        </Section>
+
         <Section label="Prioritas">
           <View style={{ flexDirection: "row", gap: 8 }}>
             {PRIORITIES.map((p) => (
