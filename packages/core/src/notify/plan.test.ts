@@ -50,11 +50,30 @@ describe("jam tenang", () => {
     expect(new Date(due!.at).getHours()).toBe(8);
   });
 
-  it("kalau digesernya bakal LEWAT tenggat, notifnya dibatalin", () => {
-    // Tenggat jam 02:00 dini hari — pengingatnya jam 01:00, di jam tenang.
-    // Digeser ke 06:00 malah sesudah tenggat, jadi gak ada gunanya.
+  /**
+   * Dulu notifnya dibuang di kasus ini. Tenggat jam 02:00 artinya orangnya
+   * gak diingetin SAMA SEKALI — padahal sore sebelumnya dia masih melek.
+   */
+  it("kalau digesernya bakal LEWAT tenggat, ditarik mundur ke sebelum jam tenang", () => {
+    // Tenggat 8 Sep 02:00 → pengingat 01:00, di jam tenang. Maju ke 06:00
+    // udah lewat tenggat, jadi mundur ke 7 Sep 21:59.
     const t = task({ dueAt: new Date(2026, 8, 8, 2, 0).toISOString() });
-    expect(keys([t])).not.toContain("due:t1");
+    const due = plan([t]).find((n) => n.kind === "due");
+    expect(due).toBeDefined();
+    const at = new Date(due!.at);
+    expect(at.getDate()).toBe(7);
+    expect(at.getHours()).toBe(21);
+    expect(at.getMinutes()).toBe(59);
+    // Yang penting: gak pernah bunyi DI DALAM jam tenang.
+    expect(inQuietHours(at, ["22:00", "06:00"])).toBe(false);
+  });
+
+  it("kalau mundurnya juga udah lewat, baru dibatalin", () => {
+    // Dilihat jam 23:30 — jam tenang udah mulai, tenggatnya jam 02:00.
+    // Maju kelewat tenggat, mundur ke 21:59 udah lewat. Gak ada slot jujur.
+    const malam = new Date(2026, 8, 7, 23, 30, 0);
+    const t = task({ dueAt: new Date(2026, 8, 8, 2, 0).toISOString() });
+    expect(keys([t], {}, malam)).not.toContain("due:t1");
   });
 });
 
@@ -86,6 +105,29 @@ describe("pengingat tenggat", () => {
 
   it("yang udah lewat gak dijadwalin ulang", () => {
     const t = task({ dueAt: new Date(NOW.getTime() - HOUR).toISOString() });
+    expect(keys([t])).not.toContain("due:t1");
+  });
+
+  /**
+   * Bug yang bikin "kok pengingatnya gak muncul". Task dari chat hampir selalu
+   * tenggatnya deket, dan lead bawaannya 60 menit — jadi jendela pengingatnya
+   * udah lewat sebelum task-nya sempat dibikin. Dulu langsung dibuang.
+   */
+  it("tenggat MASIH di depan tapi jendela lead-nya udah lewat → tetap dijadwalin", () => {
+    // Tenggat 30 menit lagi, lead bawaan 60 menit → T−60 ada di masa lalu.
+    const t = task({ dueAt: new Date(NOW.getTime() + 30 * 60_000).toISOString() });
+    const due = plan([t]).find((n) => n.kind === "due");
+    expect(due).toBeDefined();
+
+    const at = new Date(due!.at).getTime();
+    // Dimajuin ke sekarang — tapi jangan bunyi di detik yang sama.
+    expect(at).toBeGreaterThan(NOW.getTime());
+    expect(at).toBeLessThan(NOW.getTime() + 5 * 60_000);
+  });
+
+  it("lead-nya lewat DAN tenggatnya lewat → tetap gak dijadwalin", () => {
+    // Batas fix di atas: yang dimajuin cuma yang tenggatnya masih di depan.
+    const t = task({ dueAt: new Date(NOW.getTime() - 30 * 60_000).toISOString() });
     expect(keys([t])).not.toContain("due:t1");
   });
 

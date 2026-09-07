@@ -28,6 +28,13 @@ export interface PlannedNotification {
 const MIN = 60_000;
 const DAY = 86_400_000;
 
+/**
+ * Jarak aman buat pengingat yang dimajuin ke "sekarang". Bukan 0: notifikasi
+ * yang bunyi di detik yang sama pas user ngetik task-nya kebaca kayak error,
+ * bukan pengingat.
+ */
+const SOON = 60_000;
+
 function hhmm(s: string | undefined, fallback: [number, number]): [number, number] {
   const m = s?.match(/^(\d{1,2}):(\d{2})$/);
   if (!m) return fallback;
@@ -66,6 +73,14 @@ function quietEndsAfter(d: Date, quiet: readonly [string, string]): Date {
   return out;
 }
 
+/** Awal jam tenang yang MEMBUNGKUS `d` — kebalikan `quietEndsAfter`. */
+function quietStartsBefore(d: Date, quiet: readonly [string, string]): Date {
+  const [sh, sm] = hhmm(quiet[0], [22, 0]);
+  const out = atTime(d, [sh, sm]);
+  if (out.getTime() > d.getTime()) out.setTime(out.getTime() - DAY);
+  return out;
+}
+
 function alive(t: Task): boolean {
   return !t.deletedAt && t.status !== "done" && t.status !== "archived";
 }
@@ -91,20 +106,48 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
   for (const t of tasks) {
     if (!alive(t) || !t.dueAt) continue;
     const due = new Date(t.dueAt);
+
+    // Tenggatnya sendiri udah lewat → itu urusan ringkasan tertunggak, bukan
+    // pengingat. Dulu ini kegabung sama cek di bawah, dan itu yang bikin bug.
+    if (due.getTime() <= now.getTime()) continue;
+
     const lead = (t.reminderMin ?? settings.defaultReminderMin) * MIN;
     let at = new Date(due.getTime() - lead);
 
-    if (at.getTime() <= now.getTime() || at.getTime() > horizon) continue;
+    /**
+     * Pengingat yang jam tayangnya UDAH LEWAT tapi tenggatnya belum: dimajuin
+     * ke sekarang, jangan dibuang.
+     *
+     * Ini bug paling mahal di lapisan notifikasi. Dulu barisnya satu:
+     * `if (at <= now || at > horizon) continue`. Task yang dibikin lewat chat
+     * hampir selalu tenggatnya deket — "meeting jam 3" dibikin jam 2 lewat,
+     * lead bawaannya 60 menit, jadi `at` mundur ke jam 2 kurang dan LANGSUNG
+     * kebuang. Pengingatnya gak telat, gak salah jam: gak pernah ada. Persis
+     * kasus yang paling sering kepake, diem-diem gak jalan.
+     */
+    if (at.getTime() <= now.getTime()) at = new Date(now.getTime() + SOON);
+
+    if (at.getTime() > horizon) continue;
 
     /**
      * Kalau pengingatnya jatuh di jam tenang, digeser ke ujung jam tenang —
      * TAPI cuma kalau tenggatnya belum lewat waktu itu. Pengingat yang nongol
      * sesudah deadline itu bukan pengingat, itu sindiran.
+     *
+     * Kalau digesernya kelewat, dulu notifnya dibuang gitu aja. Sekarang
+     * ditarik MUNDUR ke sesaat sebelum jam tenang mulai: tenggat jam 02:00
+     * dini hari mestinya diingetin jam 21:59, waktu orangnya masih melek —
+     * bukan gak diingetin sama sekali.
      */
     if (inQuietHours(at, quiet)) {
-      const moved = quietEndsAfter(at, quiet);
-      if (moved.getTime() >= due.getTime()) continue;
-      at = moved;
+      const maju = quietEndsAfter(at, quiet);
+      if (maju.getTime() < due.getTime()) {
+        at = maju;
+      } else {
+        const mundur = new Date(quietStartsBefore(at, quiet).getTime() - SOON);
+        if (mundur.getTime() <= now.getTime()) continue;
+        at = mundur;
+      }
     }
 
     out.push({

@@ -1,7 +1,7 @@
 // Wajib paling atas: supabase-js butuh URL/URLSearchParams yang gak ada di Hermes.
 import "react-native-url-polyfill/auto";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppState } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
@@ -22,7 +22,12 @@ import { mobilePlatform, mobileStorage } from "../src/platform";
 import { ThemeProvider, useTheme } from "../src/theme";
 import { useAuth } from "../src/auth";
 import { useSync } from "../src/sync";
-import { setupNotifications, syncNotifications } from "../src/notifications";
+import {
+  hasNotificationPermission,
+  requestNotificationPermission,
+  setupNotifications,
+  syncNotifications,
+} from "../src/notifications";
 import { useShareIntent } from "expo-share-intent";
 import { requestWidgetUpdate } from "react-native-android-widget";
 import { FokusWidget } from "../src/widget/FokusWidget";
@@ -81,9 +86,48 @@ function Chrome() {
    */
   const [notifReady, setNotifReady] = useState(false);
 
+  /**
+   * Izinnya dicek ULANG tiap app balik ke depan, bukan sekali pas mount.
+   *
+   * Kasusnya: user nolak di jalan pertama, terus nyalain sendiri lewat Setelan
+   * sistem. Dulu `notifReady` gak pernah dibaca lagi — dan efek penjadwalan di
+   * bawah nyangkut di belakangnya, termasuk listener AppState-nya. Jadi
+   * jadwalnya baru kepasang setelah app dimatiin total dan dibuka lagi, yang
+   * dari sisi user kebaca sebagai "izinnya udah dinyalain tapi tetep gak ada
+   * notifikasi".
+   *
+   * Yang ini sengaja DI LUAR gerbang, biar bisa nutup gerbangnya sendiri.
+   */
   useEffect(() => {
     void setupNotifications().then(setNotifReady);
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s !== "active") return;
+      // Cuma baca status, gak minta izin lagi — dialog izin yang nongol tiap
+      // balik ke app itu cara tercepat bikin orang matiin notifikasi.
+      void hasNotificationPermission().then(setNotifReady);
+    });
+    return () => sub.remove();
   }, []);
+
+  /**
+   * Baru minta izin kalau ada yang beneran perlu diingetin.
+   *
+   * Dialognya jadi nongol pas user baru bikin task bertenggat — bukan di
+   * detik pertama app dibuka, waktu belum ada apa-apa buat diingetin. Sama
+   * jumlah ketukannya, beda jauh peluang di-izinin.
+   */
+  const adaTenggat = useMemo(
+    () =>
+      selectTasks(tasks).some(
+        (t) => t.dueAt && !t.deletedAt && t.status !== "done" && t.status !== "archived",
+      ),
+    [tasks],
+  );
+
+  useEffect(() => {
+    if (notifReady || !adaTenggat) return;
+    void requestNotificationPermission().then(setNotifReady);
+  }, [adaTenggat, notifReady]);
 
   /**
    * Ketuk notifikasi → buka task-nya (§6.7 aturan 3).
@@ -137,6 +181,21 @@ function Chrome() {
       void syncNotifications({
         tasks: selectTasks(tasks),
         settings: settings ?? { ...DEFAULT_SETTINGS, userId: "local" },
+      }).then((r) => {
+        /**
+         * Hasilnya dulu dibuang, padahal komentarnya sendiri bilang "kepake
+         * buat log". Bug "kok notifnya gak muncul" jadi cuma bisa ditebak.
+         *
+         * `planned` khususnya kepake buat mantau plafon alarm Android
+         * (~500 per app). Selama angkanya jauh di bawah itu, kita gak perlu
+         * bikin penjatah global — dan kalau mulai naik, ketauan dari sini
+         * duluan, bukan dari notifikasi yang diem-diem berhenti jalan.
+         */
+        if (__DEV__) {
+          console.log(
+            `[notif] planned=${r.planned} scheduled=${r.scheduled} cancelled=${r.cancelled} failed=${r.failed}`,
+          );
+        }
       });
     };
     run();
