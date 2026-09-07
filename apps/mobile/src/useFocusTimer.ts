@@ -85,7 +85,7 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
         // gunanya istirahat.
         setGuard(
           f.phase === "work"
-            ? startGuard(f.taskId ? title : "Lagi fokus", endsAtOf(f))
+            ? startGuard(f.taskId ? title : "Lagi fokus", endsAtOf(f), f.taskId)
             : null,
         );
       }
@@ -112,7 +112,9 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     const next = useKaiStore.getState().focus;
     if (next) {
       void scheduleTimerDone(next);
-      setGuard(next.phase === "work" ? startGuard(title, endsAtOf(next)) : null);
+      setGuard(
+        next.phase === "work" ? startGuard(title, endsAtOf(next), next.taskId) : null,
+      );
     }
   }, [title]);
 
@@ -138,6 +140,7 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     if (f) useKaiStore.getState().setFocus(markCore(f));
   }, []);
 
+
   const finish = useCallback(
     (stop = false) => {
       const store = useKaiStore.getState();
@@ -162,7 +165,7 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
       if (r.next) {
         void scheduleTimerDone(r.next);
         if (r.next.phase === "work") {
-          setGuard(startGuard(title, endsAtOf(r.next)));
+          setGuard(startGuard(title, endsAtOf(r.next), r.next.taskId));
         } else {
           stopGuard();
           setGuard(null);
@@ -175,6 +178,25 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     },
     [userId, settings, title],
   );
+
+  /**
+   * Tombol Jeda / Selesai di notifikasi ongoing.
+   *
+   * Ditaruh SESUDAH `pause` dan `finish` dideklarasiin — array dependensinya
+   * dibaca waktu render, jadi kalau efeknya naik ke atas, `finish` masih di
+   * temporal dead zone dan render-nya lempar ReferenceError.
+   *
+   * Layanannya udah matiin dirinya sendiri sebelum event ini nyampe, jadi di
+   * sini tinggal nyamain state-nya. `stopGuard()` di dalam `pause`/`finish`
+   * jadi gak ada kerjaannya, dan itu gak apa-apa: dia idempoten.
+   */
+  useEffect(() => {
+    const sub = FocusGuard.addListener("onGuardAction", (e) => {
+      if (e.action === "pause") pause();
+      else finish(true);
+    });
+    return () => sub.remove();
+  }, [pause, finish]);
 
   return {
     view: focus ? focusView(focus, now) : null,

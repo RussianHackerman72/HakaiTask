@@ -14,6 +14,8 @@ import expo.modules.kotlin.records.Record
 class StartGuardOptions : Record {
   @Field var blocked: List<String> = emptyList()
   @Field var title: String = "Lagi fokus"
+  /** Buat deep-link balik ke layar sesinya dari notifikasi & layar penghalang. */
+  @Field var taskId: String? = null
   @Field var endsAt: Long? = null
   @Field var dnd: Boolean = false
 }
@@ -35,16 +37,23 @@ class FocusGuardModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("FocusGuard")
 
-    Events("onBlockedAttempt")
+    Events("onBlockedAttempt", "onGuardAction")
 
     OnCreate {
       GuardState.onBlocked = { pkg, at ->
         sendEvent("onBlockedAttempt", mapOf("packageName" to pkg, "at" to at))
       }
+      GuardState.onAction = { action ->
+        sendEvent(
+          "onGuardAction",
+          mapOf("action" to if (action == FocusGuardService.ACTION_PAUSE) "pause" else "stop"),
+        )
+      }
     }
 
     OnDestroy {
       GuardState.onBlocked = null
+      GuardState.onAction = null
     }
 
     // ── izin ────────────────────────────────────────────────────────────────
@@ -132,6 +141,7 @@ class FocusGuardModule : Module() {
 
       val svc = Intent(context, FocusGuardService::class.java).apply {
         putExtra(FocusGuardService.EXTRA_TITLE, options.title)
+        putExtra(FocusGuardService.EXTRA_TASK_ID, options.taskId)
         putExtra(FocusGuardService.EXTRA_ENDS_AT, options.endsAt ?: 0L)
       }
       context.startForegroundService(svc)
@@ -156,29 +166,11 @@ class FocusGuardModule : Module() {
    * DND dinyalain cuma kalau izinnya ada. Gak dikasih izin bukan alasan buat
    * gagal — sesinya tetap jalan, cuma tanpa senyap.
    *
-   * Yang dibenerin di sini: dulu `stopGuard` SELALU nyetel INTERRUPTION_FILTER_ALL,
-   * jadi user yang udah nyalain DND sendiri sebelum sesi mulai malah nemu
-   * DND-nya MATI pas sesinya kelar. App ini gak pernah diminta ngurus itu.
-   *
-   * Sekarang keadaan sebelumnya dicatat pas nyalain, dan dibalikin pas
-   * selesai. Kalau kita gak pernah nyalain (`priorFilter` masih null), DND-nya
-   * gak disentuh sama sekali.
+   * Logikanya ada di `Dnd`, bukan di sini: catatan keadaan sebelumnya harus
+   * hidup lebih lama daripada instance modul ini, biar tombol di notifikasi
+   * tetap bisa balikin DND walau JS-nya udah mati.
    */
-  private var priorFilter: Int? = null
-
   private fun setDnd(on: Boolean) {
-    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    if (!nm.isNotificationPolicyAccessGranted) return
-
-    if (on) {
-      // Cuma dicatat sekali — startGuard dua kali berturut jangan sampai
-      // nimpa catatan aslinya sama keadaan yang udah kita ubah sendiri.
-      if (priorFilter == null) priorFilter = nm.currentInterruptionFilter
-      nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
-    } else {
-      val balik = priorFilter ?: return // gak pernah kita nyalain → jangan sentuh
-      priorFilter = null
-      nm.setInterruptionFilter(balik)
-    }
+    if (on) Dnd.on(context) else Dnd.off(context)
   }
 }

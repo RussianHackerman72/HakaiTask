@@ -1,0 +1,32 @@
+<!--
+  Ikon kecil buat notifikasi sesi fokus.
+
+  Vector, bukan PNG: ikon kecil notifikasi itu SILUET — Android buang semua
+  warnanya dan cuma pakai alpha-nya. Jadi yang dibutuhin cuma bentuk, dan
+  bentuk paling pas ditulis sebagai path, bukan disimpen sebagai bitmap di
+  lima kerapatan layar.
+
+  Sebelumnya di sini kepasang `android.R.drawable.ic_lock_idle_alarm` —
+  ikon bawaan Android yang bentuknya gembok, yang gak nyambung sama apa pun
+  di app ini.
+
+  Bentuknya lingkaran timer dengan satu jarum: cukup tebal biar kebaca di
+  24dp, dan gak ada detail tipis yang ilang pas dijadiin siluet.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="#FFFFFFFF">
+
+  <!-- Cincin luar. -->
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M12,2C6.477,2 2,6.477 2,12s4.477,10 10,10 10,-4.477 10,-10S17.523,2 12,2zM12,20c-4.418,0 -8,-3.582 -8,-8s3.582,-8 8,-8 8,3.582 8,8 -3.582,8 -8,8z" />
+
+  <!-- Jarum: dari pusat ke atas, lalu sedikit ke kanan. -->
+  <path
+      android:fillColor="#FFFFFFFF"
+      android:pathData="M12.75,7h-1.5v5.5l4.25,2.55 0.75,-1.23 -3.5,-2.07z" />
+</vector>

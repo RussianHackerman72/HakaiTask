@@ -1,6 +1,39 @@
 package expo.modules.focusguard
 
+import android.app.NotificationManager
+import android.content.Context
 import java.util.concurrent.atomic.AtomicBoolean
+
+/**
+ * Do Not Disturb, dipisah dari modul Expo.
+ *
+ * Keadaan sebelumnya harus dicatat di tempat yang GAK ikut mati bareng JS.
+ * Kalau catatannya nempel di instance modul, tombol "Selesai" di notifikasi
+ * yang dipencet waktu JS-nya udah mati bakal ninggalin DND nyala terus, dan
+ * user gak punya petunjuk apa pun soal siapa yang nyalain.
+ */
+object Dnd {
+  @Volatile
+  private var prior: Int? = null
+
+  fun on(ctx: Context) {
+    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    if (!nm.isNotificationPolicyAccessGranted) return
+    // Dicatat sekali doang — start dua kali jangan nimpa catatan aslinya
+    // sama keadaan yang udah kita ubah sendiri.
+    if (prior == null) prior = nm.currentInterruptionFilter
+    nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
+  }
+
+  /** Balikin ke keadaan sebelum sesi. Diam aja kalau kita gak pernah nyalain. */
+  fun off(ctx: Context) {
+    val balik = prior ?: return
+    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    if (!nm.isNotificationPolicyAccessGranted) return
+    prior = null
+    nm.setInterruptionFilter(balik)
+  }
+}
 
 /**
  * Keadaan sesi yang dipakai bareng tiga proses yang gak saling kenal:
@@ -31,6 +64,21 @@ object GuardState {
   /** Diisi modul Expo biar percobaan yang kehalang bisa dikirim ke JS. */
   @Volatile
   var onBlocked: ((String, Long) -> Unit)? = null
+
+  /**
+   * Tombol di notifikasi (Jeda / Selesai) → JS.
+   *
+   * Lewat sini, bukan lewat broadcast: layanan sama modul Expo hidup di proses
+   * yang sama, jadi callback statis udah cukup dan gak perlu nambah receiver
+   * yang harus didaftarin di manifest.
+   *
+   * Kalau JS-nya lagi mati, ini null dan tombolnya cuma matiin layanan. Itu
+   * keadaan yang bener: notifikasinya ilang, dan pas app dibuka lagi state
+   * sesinya diturunin ulang dari jam sistem — gak ada hitungan yang perlu
+   * "dilanjutin".
+   */
+  @Volatile
+  var onAction: ((String) -> Unit)? = null
 
   fun start(packages: Set<String>) {
     blocked = packages

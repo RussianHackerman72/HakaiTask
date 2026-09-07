@@ -6,7 +6,7 @@
  * itu inti dari layar ini.
  */
 import { useEffect } from "react";
-import { View } from "react-native";
+import { Alert, BackHandler, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useKeepAwake } from "expo-keep-awake";
 import { useKaiStore } from "@hakaitask/core/store";
@@ -51,6 +51,35 @@ export default function Focus() {
   }, [timer.view, timer.taskId, id, router]);
 
   const v = timer.view;
+
+  /**
+   * Gestur back pas sesi jalan → tanya dulu.
+   *
+   * Ini SATU-SATUNYA momen "sebelum" yang Android kasih. Tombol home sama
+   * recents sengaja gak bisa disadap — dan emang mestinya gitu, app yang bisa
+   * nahan orang di dalamnya itu app yang gak bisa ditinggal. Jadi back gestur
+   * doang yang bisa ditanyain, dan itu justru jalan keluar yang paling sering
+   * kepencet gak sengaja: satu geseran dari tepi layar.
+   *
+   * Yang ditanya cuma kalau sesinya BENERAN jalan. Pas dijeda atau belum
+   * mulai, dialog konfirmasi cuma bikin sebel.
+   */
+  useEffect(() => {
+    if (!v || v.paused || v.done) return;
+
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      Alert.alert(
+        "Keluar dari sesi?",
+        "Timernya tetap jalan di latar. Notifikasinya ada di laci kalau mau dijeda.",
+        [
+          { text: "Batal", style: "cancel" },
+          { text: "Keluar", onPress: () => router.back() },
+        ],
+      );
+      return true; // ditangani — jangan kabur duluan
+    });
+    return () => sub.remove();
+  }, [v, router]);
   const running = v !== null;
 
   return (

@@ -55,10 +55,7 @@ class BlockedActivity : Activity() {
     root.addView(
       Button(this).apply {
         text = "Oke, balik"
-        // Tombolnya nutup layar ini DAN balik ke home — bukan balik ke app yang
-        // tadi diblokir, soalnya itu bakal langsung kehalang lagi dan kerasa
-        // kayak app-nya ngelawan, bukan nolong.
-        setOnClickListener { goHome() }
+        setOnClickListener { balikKeSesi() }
       },
     )
 
@@ -78,19 +75,53 @@ class BlockedActivity : Activity() {
     return if (kosong) "Balik lagi habis sesi ini." else judul!!
   }
 
-  /** Tombol back juga ke home, bukan balik ke app yang diblokir. */
+  /** Tombol back sama persis kayak tombol di layar — dua-duanya balik ke sesi. */
   @Deprecated("Dipakai sengaja: perilakunya harus sama kayak tombol di layar.")
   override fun onBackPressed() {
-    goHome()
+    balikKeSesi()
   }
 
-  private fun goHome() {
-    startActivity(
-      android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
-        addCategory(android.content.Intent.CATEGORY_HOME)
-        flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-      },
-    )
+  /**
+   * Balik ke HaKaiTask, BUKAN ke beranda.
+   *
+   * Dulu ke beranda, dengan alasan yang masih bener sejauh yang dia lihat:
+   * balik ke app yang barusan diblokir bakal langsung kehalang lagi dan kerasa
+   * kayak app-nya ngelawan. Tapi itu cuma nimbang DUA pilihan, dan yang
+   * dipilih kebetulan yang paling gampang bocor — beranda itu kumpulan ikon
+   * semua pengalih perhatian lain. Orang yang kehalang buka Instagram lalu
+   * didorong ke beranda cuma butuh satu ketukan buat nemu TikTok.
+   *
+   * Pilihan ketiga: balik ke layar sesinya. Bukan app yang diblokir, bukan
+   * beranda — tempat yang ngingetin lagi ngerjain apa.
+   */
+  private fun balikKeSesi() {
+    val id = FocusGuardService.currentTaskId
+    val intent = if (!id.isNullOrEmpty()) {
+      android.content.Intent(
+        android.content.Intent.ACTION_VIEW,
+        android.net.Uri.parse("hakaitask://focus/$id"),
+      )
+    } else {
+      packageManager.getLaunchIntentForPackage(packageName)
+    }
+
+    // Kalau intent-nya gak kebentuk (launcher gak ketemu — mestinya gak
+    // mungkin), JANGAN diem: mendarat di beranda masih lebih baik daripada
+    // layar penghalang yang gak bisa ditutup.
+    if (intent == null) {
+      startActivity(
+        android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+          addCategory(android.content.Intent.CATEGORY_HOME)
+          flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+        },
+      )
+    } else {
+      intent.addFlags(
+        android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+          android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP,
+      )
+      startActivity(intent)
+    }
     finish()
   }
 

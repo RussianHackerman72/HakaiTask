@@ -83,9 +83,12 @@ export function useGuardSettings(): { dnd: boolean; setDnd: (v: boolean) => void
  * Hasil nyalain penjaga — sengaja dibalikin, bukan disimpen diam-diam.
  *
  *   "menjaga"     beneran ngeblokir
- *   "kosong"      gak ada app yang dipilih — gak ada yang perlu dijaga
+ *   "kosong"      gak ada app yang dipilih — sesi & notifikasinya tetap jalan
  *   "tanpa-izin"  ada blocklist TAPI izin aksesibilitasnya mati
  *   "gagal"       modul native-nya gak ada / error
+ *
+ * Cuma dua yang terakhir yang perlu diomongin ke user. "kosong" itu pilihan
+ * yang sah: timer sama notifikasinya jalan penuh, cuma gak ada yang ditahan.
  */
 export type GuardStatus = "menjaga" | "kosong" | "tanpa-izin" | "gagal";
 
@@ -103,20 +106,39 @@ export type GuardStatus = "menjaga" | "kosong" | "tanpa-izin" | "gagal";
  * buruk daripada gak nawarin sama sekali — user baru sadar setelah sejam
  * kebuang.
  */
-export function startGuard(title: string, endsAt: string | undefined): GuardStatus {
+export function startGuard(
+  title: string,
+  endsAt: string | undefined,
+  taskId?: string,
+): GuardStatus {
   const blocked = snapshotBlocked();
-  if (blocked.length === 0) return "kosong";
 
   try {
-    if (!FocusGuard.isAccessibilityEnabled()) return "tanpa-izin";
+    /**
+     * Layanannya jalan SETIAP sesi, bukan cuma pas ada yang diblokir.
+     *
+     * Dulu blocklist kosong = pulang duluan, jadi gak ada layanan dan gak ada
+     * notifikasi ongoing. Padahal notifikasi itu bukan bagian dari
+     * pemblokiran — dia yang bikin timernya kelihatan pas layar dikunci, dan
+     * yang bikin sesi bisa dijeda tanpa buka app. Orang yang gak ngeblokir
+     * app satu pun tetap butuh itu.
+     *
+     * Yang digerbang blocklist cuma pemblokirannya sendiri, dan itu diurus
+     * `GuardState` di sisi Kotlin: himpunan kosong = `shouldBlock` selalu
+     * false.
+     */
+    const blokirJalan = blocked.length > 0 && FocusGuard.isAccessibilityEnabled();
 
     FocusGuard.startGuard({
-      blocked,
+      blocked: blokirJalan ? blocked : [],
       title,
+      ...(taskId ? { taskId } : {}),
       endsAt: endsAt ? Date.parse(endsAt) : null,
       dnd: snapshotDnd(),
     });
-    return "menjaga";
+
+    if (blocked.length === 0) return "kosong";
+    return blokirJalan ? "menjaga" : "tanpa-izin";
   } catch (e) {
     // Modul native gak ada (misal build lama) — sesinya tetap jalan, tapi
     // jangan ditelen bulat-bulat: dulu modul yang beneran rusak kelihatan

@@ -22,11 +22,13 @@ export interface InstalledApp {
 }
 
 export interface StartGuardOptions {
-  /** Paket yang diblokir selama sesi. */
+  /** Paket yang diblokir selama sesi. Boleh kosong — layanannya tetap jalan. */
   blocked: string[];
   /** Judul di notifikasi ongoing — biasanya judul task-nya. */
   title: string;
-  /** Kapan sesi ini mestinya kelar, buat teks notifikasi. Epoch ms. */
+  /** Buat deep-link balik ke layar sesi dari notifikasi & layar penghalang. */
+  taskId?: string;
+  /** Kapan sesi ini mestinya kelar. Epoch ms; null buat stopwatch. */
   endsAt: number | null;
   /** Nyalain Do Not Disturb selama sesi. */
   dnd: boolean;
@@ -48,6 +50,14 @@ type Events = {
    * cuma total waktu", lewat jalan yang lebih baik.
    */
   onBlockedAttempt: (e: BlockedAttemptEvent) => void;
+
+  /**
+   * Tombol Jeda / Selesai di notifikasi ongoing.
+   *
+   * Sesi fokus yang harus dibuka app-nya dulu buat disudahi itu ngundang
+   * mampir ke app lain di jalan — persis yang lagi dicegah.
+   */
+  onGuardAction: (e: { action: "pause" | "stop" }) => void;
 };
 
 declare class FocusGuardModuleType extends NativeModule<Events> {
