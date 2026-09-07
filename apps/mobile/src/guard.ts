@@ -79,26 +79,57 @@ export function useGuardSettings(): { dnd: boolean; setDnd: (v: boolean) => void
   return { dnd, setDnd };
 }
 
-/** Dipanggil pas sesi kerja mulai. Diam aja kalau gak ada yang diblokir. */
-export function startGuard(title: string, endsAt: string | undefined): void {
+/**
+ * Hasil nyalain penjaga — sengaja dibalikin, bukan disimpen diam-diam.
+ *
+ *   "menjaga"     beneran ngeblokir
+ *   "kosong"      gak ada app yang dipilih — gak ada yang perlu dijaga
+ *   "tanpa-izin"  ada blocklist TAPI izin aksesibilitasnya mati
+ *   "gagal"       modul native-nya gak ada / error
+ */
+export type GuardStatus = "menjaga" | "kosong" | "tanpa-izin" | "gagal";
+
+/**
+ * Dipanggil pas sesi kerja mulai.
+ *
+ * Dulu fungsi ini cuma ngecek blocklist-nya kosong atau enggak, terus manggil
+ * `startGuard` — TANPA sekali pun nanya apakah izin aksesibilitasnya nyala.
+ * Kalau mati: layanannya tetap jalan, notifikasi ongoing-nya tetap nongol,
+ * timernya tetap jalan, dan gak ada satu app pun yang keblokir. Sesinya
+ * KELIHATAN dijaga padahal enggak.
+ *
+ * Itu bukan bug kecil. Satu-satunya hal yang dijanjiin fitur ini adalah
+ * "app pengalih perhatian bakal ketahan", dan diem-diem gak nepatin itu lebih
+ * buruk daripada gak nawarin sama sekali — user baru sadar setelah sejam
+ * kebuang.
+ */
+export function startGuard(title: string, endsAt: string | undefined): GuardStatus {
   const blocked = snapshotBlocked();
-  if (blocked.length === 0) return;
+  if (blocked.length === 0) return "kosong";
+
   try {
+    if (!FocusGuard.isAccessibilityEnabled()) return "tanpa-izin";
+
     FocusGuard.startGuard({
       blocked,
       title,
       endsAt: endsAt ? Date.parse(endsAt) : null,
       dnd: snapshotDnd(),
     });
-  } catch {
-    // Modul native gak ada (misal build lama) — sesinya tetap jalan.
+    return "menjaga";
+  } catch (e) {
+    // Modul native gak ada (misal build lama) — sesinya tetap jalan, tapi
+    // jangan ditelen bulat-bulat: dulu modul yang beneran rusak kelihatan
+    // persis kayak modul yang sengaja gak dipakai.
+    if (__DEV__) console.warn("[guard] startGuard gagal:", e);
+    return "gagal";
   }
 }
 
 export function stopGuard(): void {
   try {
     FocusGuard.stopGuard();
-  } catch {
-    /* diabaikan */
+  } catch (e) {
+    if (__DEV__) console.warn("[guard] stopGuard gagal:", e);
   }
 }

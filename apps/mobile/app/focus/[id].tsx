@@ -99,6 +99,35 @@ export default function Focus() {
               </T>
             )}
 
+            {/*
+              Kalau penjaganya gak jalan, BILANG.
+
+              Dulu sesi yang izin aksesibilitasnya mati tetap kelihatan normal:
+              notifikasi ongoing nongol, timer jalan, dan gak ada satu app pun
+              yang keblokir. User baru sadar setelah kebablasan — dan yang
+              rusak bukan cuma sesi itu, tapi kepercayaan bahwa angka
+              "gangguan"-nya berarti apa-apa.
+
+              Ditaruh di dekat timer, bukan di toast yang lewat: ini keadaan
+              yang berlaku SEPANJANG sesi, bukan kejadian sekali.
+            */}
+            {timer.guard === "tanpa-izin" && (
+              <Tappable
+                onPress={() => router.push("/focus/setup")}
+                style={{ paddingHorizontal: 16 }}
+              >
+                <T variant="bodySm" tone="accent">
+                  App-nya gak lagi ditahan — izin aksesibilitasnya mati. Betulin →
+                </T>
+              </Tappable>
+            )}
+
+            {timer.guard === "gagal" && (
+              <T variant="bodySm" tone="accent">
+                Penjaga app gagal jalan. Timernya tetap normal.
+              </T>
+            )}
+
             {task && task.subtasks.length > 0 && (
               <View style={{ gap: 10, alignSelf: "stretch", paddingHorizontal: th.space[3] }}>
                 {task.subtasks.map((s) => (

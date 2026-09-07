@@ -1,16 +1,19 @@
 /**
  * Setelan penjaga fokus — izin + daftar app yang diblokir.
  *
- * Tiga izin di sini semuanya izin KHUSUS: gak ada dialog "Izinkan?", user harus
+ * Dua izin di sini dua-duanya izin KHUSUS: gak ada dialog "Izinkan?", user harus
  * nyalain sendiri di Setelan sistem. Jadi layar ini nunjukin KEADAAN SEKARANG
  * tiap izin dan alasannya dalam satu kalimat — bukan cuma tombol yang
  * ngelempar orang ke Setelan tanpa penjelasan.
+ *
+ * Dulu izinnya tiga. Yang ketiga (statistik pemakaian) dibuang: gak ada kode
+ * yang pernah makai, tapi tetep bikin orang mikir dua kali pas dimintanya.
  *
  * Semuanya OPSIONAL. Timer fokus jalan penuh tanpa satu izin pun; yang ilang
  * cuma pemblokirannya. Fitur yang maksa izin di depan bakal ditolak, dan fitur
  * intinya ikut gak kepakai.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppState, ScrollView, TextInput, View } from "react-native";
 import { useRouter } from "expo-router";
 import { FocusGuard, type InstalledApp } from "../../modules/focus-guard";
@@ -30,9 +33,18 @@ export default function FocusSetup() {
   const { blocked, toggle } = useBlocklist();
   const { dnd, setDnd } = useGuardSettings();
 
-  const [perms, setPerms] = useState({ usage: false, a11y: false, dnd: false });
+  const [perms, setPerms] = useState({ a11y: false, dnd: false });
   const [apps, setApps] = useState<InstalledApp[]>([]);
   const [filter, setFilter] = useState("");
+
+  /**
+   * Berapa kali user udah balik dari Setelan aksesibilitas TANPA izinnya
+   * nyala. Ini satu-satunya cara ngendus "Restricted settings" — Android gak
+   * ngasih API buat nanya keadaan itu, jadi yang bisa dibaca cuma gejalanya:
+   * dia pergi ke Setelan, balik, dan tombolnya masih mati.
+   */
+  const [a11yGagal, setA11yGagal] = useState(0);
+  const nungguA11y = useRef(false);
 
   /**
    * Dicek ulang tiap app balik ke depan — izinnya dinyalain di SETELAN, jadi
@@ -40,11 +52,15 @@ export default function FocusSetup() {
    * bilang "belum" padahal barusan dinyalain.
    */
   const refresh = useCallback(() => {
-    setPerms({
-      usage: FocusGuard.hasUsageStatsPermission(),
-      a11y: FocusGuard.isAccessibilityEnabled(),
-      dnd: FocusGuard.hasDndPermission(),
-    });
+    const a11y = FocusGuard.isAccessibilityEnabled();
+    setPerms({ a11y, dnd: FocusGuard.hasDndPermission() });
+
+    if (nungguA11y.current) {
+      nungguA11y.current = false;
+      // Balik dengan tangan kosong → kemungkinan besar tombolnya abu-abu.
+      if (!a11y) setA11yGagal((n) => n + 1);
+    }
+    if (a11y) setA11yGagal(0);
   }, []);
 
   useEffect(() => {
@@ -83,15 +99,52 @@ export default function FocusSetup() {
           label="Lihat app yang lagi kebuka"
           why="Dipakai buat tau kapan app yang kamu blokir kebuka. Isi layar gak dibaca."
           granted={perms.a11y}
-          onPress={() => FocusGuard.openAccessibilitySettings()}
+          onPress={() => {
+            nungguA11y.current = true;
+            FocusGuard.openAccessibilitySettings();
+          }}
         />
 
-        <Perm
-          label="Akses statistik pemakaian"
-          why="Buat nyatet berapa kali kamu kepancing buka app itu selama sesi."
-          granted={perms.usage}
-          onPress={() => FocusGuard.openUsageStatsSettings()}
-        />
+        {/*
+          Android 13+ ngunci tombol aksesibilitas buat app yang dipasang di
+          luar Play — dan tombolnya cuma kelihatan ABU-ABU, tanpa sepatah kata
+          kenapa. Dari sisi user itu kebaca sebagai app-nya yang rusak.
+
+          Gak ada API buat ngecek keadaan ini, jadi yang dibaca gejalanya:
+          user pergi ke Setelan, balik, izinnya masih mati. Sekali bisa aja
+          dia cuma batal. Dua kali, hampir pasti kekunci.
+
+          Dan ini emang gak bisa diakalin dari kode — pengunciannya justru ada
+          supaya app gak bisa nyalain layanan aksesibilitasnya sendiri, persis
+          langkah yang dipakai malware. Yang bisa kita kasih cuma kalimat yang
+          jujur plus jalan pintas ke halaman yang bener.
+        */}
+        {!perms.a11y && a11yGagal >= 2 && (
+          <Card style={{ gap: 8 }}>
+            <T variant="h2" style={{ fontSize: 15 }}>
+              Tombolnya abu-abu dan gak bisa dipencet?
+            </T>
+            <T variant="bodySm" tone="ink70">
+              Itu bukan app-nya rusak. Android ngunci tombol ini buat app yang
+              dipasang di luar Play Store. Buka info app, ketuk ⋮ di pojok kanan
+              atas, pilih “Allow restricted settings”, lalu balik ke Setelan
+              aksesibilitas.
+            </T>
+            <Tappable
+              onPress={() => FocusGuard.openAppDetailsSettings()}
+              style={{ alignSelf: "flex-start", paddingHorizontal: 0 }}
+            >
+              <T variant="num" style={{ color: th.c.ink }}>
+                Buka info app →
+              </T>
+            </Tappable>
+            <T variant="meta" tone="ink40">
+              Sekalian: kalau kamu pernah paksa berhenti HaKaiTask, Android
+              matiin izin ini sendiri. Itu perilaku bawaan buat semua layanan
+              aksesibilitas, bukan cuma app ini.
+            </T>
+          </Card>
+        )}
 
         <Perm
           label="Mode jangan ganggu"

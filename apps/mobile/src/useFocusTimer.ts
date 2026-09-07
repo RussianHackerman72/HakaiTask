@@ -20,7 +20,7 @@ import {
 import { useKaiStore } from "@hakaitask/core/store";
 import { newId } from "@hakaitask/app/tasks";
 import { cancelTimerDone, scheduleTimerDone } from "./notifications";
-import { startGuard, stopGuard } from "./guard";
+import { startGuard, stopGuard, type GuardStatus } from "./guard";
 import { FocusGuard } from "../modules/focus-guard";
 import { endsAt as endsAtOf } from "@hakaitask/core/focus";
 
@@ -39,6 +39,14 @@ export interface FocusTimer {
   view: FocusView | null;
   mode: FocusMode | null;
   taskId?: string;
+  /**
+   * Keadaan penjaga app SEKARANG — dibawa keluar biar layarnya bisa jujur.
+   *
+   * `null` pas lagi istirahat atau dijeda: penjaga emang sengaja dimatiin di
+   * fase itu, jadi bukan kabar buruk. Yang perlu diomongin ke user cuma
+   * "tanpa-izin" dan "gagal".
+   */
+  guard: GuardStatus | null;
   start: (mode: FocusMode, taskId?: string) => void;
   pause: () => void;
   resume: () => void;
@@ -50,6 +58,10 @@ export interface FocusTimer {
 export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer {
   const focus = useKaiStore((s) => s.focus);
   const settings = useKaiStore((s) => s.settings);
+
+  // Ditaruh di state, bukan diturunin ulang tiap render: `isAccessibilityEnabled()`
+  // itu panggilan native, dan manggilnya 2x sedetik ikut tick timer sia-sia.
+  const [guard, setGuard] = useState<GuardStatus | null>(null);
 
   // Jangan tick pas dijeda — gak ada yang berubah, dan itu cuma bikin render
   // dua kali sedetik tanpa alasan.
@@ -71,7 +83,11 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
         void scheduleTimerDone(f);
         // Cuma pas kerja. Ngeblokir app pas lagi ISTIRAHAT itu justru ngelawan
         // gunanya istirahat.
-        if (f.phase === "work") startGuard(f.taskId ? title : "Lagi fokus", endsAtOf(f));
+        setGuard(
+          f.phase === "work"
+            ? startGuard(f.taskId ? title : "Lagi fokus", endsAtOf(f))
+            : null,
+        );
       }
     },
     [settings, title],
@@ -86,6 +102,7 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     void cancelTimerDone();
     // Dijeda = gak lagi fokus. Nahan app pas lagi jeda itu cuma nyebelin.
     stopGuard();
+    setGuard(null);
   }, []);
 
   const resume = useCallback(() => {
@@ -95,7 +112,7 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     const next = useKaiStore.getState().focus;
     if (next) {
       void scheduleTimerDone(next);
-      if (next.phase === "work") startGuard(title, endsAtOf(next));
+      setGuard(next.phase === "work" ? startGuard(title, endsAtOf(next)) : null);
     }
   }, [title]);
 
@@ -144,11 +161,16 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
       store.setFocus(r.next);
       if (r.next) {
         void scheduleTimerDone(r.next);
-        if (r.next.phase === "work") startGuard(title, endsAtOf(r.next));
-        else stopGuard();
+        if (r.next.phase === "work") {
+          setGuard(startGuard(title, endsAtOf(r.next)));
+        } else {
+          stopGuard();
+          setGuard(null);
+        }
       } else {
         void cancelTimerDone();
         stopGuard();
+        setGuard(null);
       }
     },
     [userId, settings, title],
@@ -158,6 +180,7 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     view: focus ? focusView(focus, now) : null,
     mode: focus?.mode ?? null,
     ...(focus?.taskId ? { taskId: focus.taskId } : {}),
+    guard,
     start,
     pause,
     resume,

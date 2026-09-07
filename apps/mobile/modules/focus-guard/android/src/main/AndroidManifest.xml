@@ -2,11 +2,21 @@
           xmlns:tools="http://schemas.android.com/tools">
 
   <!--
-    PACKAGE_USAGE_STATS itu izin "appop", bukan izin runtime — `tools:ignore`
-    dipakai supaya lint gak nolak, dan user tetap harus nyalain di Setelan.
+    PACKAGE_USAGE_STATS DIBUANG.
+
+    Dia dulu diminta dengan alasan "buat nyatet berapa kali kamu kepancing
+    buka app itu" — tapi gak ada satu baris Kotlin pun yang pernah nyentuh
+    UsageStatsManager. Penghitung gangguannya dari dulu jalan lewat
+    AccessibilityService (GuardState.onBlocked → onBlockedAttempt), yang
+    emang sumber yang lebih tepat: dia tau PERCOBAAN buka, bukan cuma statistik
+    pemakaian sesudahnya.
+
+    Jadi ini izin yang kedengeran serem, gak kepakai, dan harus dinyalain
+    manual di Setelan. Tiga-tiganya ongkos tanpa imbalan: nambah alasan buat
+    Play Protect curiga, dan nambah satu langkah onboarding yang gak ada
+    gunanya. Persis kesalahan yang sama kayak QUERY_ALL_PACKAGES di bawah,
+    cuma gejalanya lebih pelan.
   -->
-  <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
-                   tools:ignore="ProtectedPermissions" />
   <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
