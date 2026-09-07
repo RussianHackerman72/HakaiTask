@@ -23,6 +23,16 @@ export interface PlannedNotification {
   body: string;
   /** Tiap notif nunjuk ke SESUATU — §6.7 aturan 3, gak ada yang mendarat di halaman depan. */
   data: { taskId?: string };
+  /**
+   * Kebal dari batas harian (`maxNotifPerDay`).
+   *
+   * Cuma buat pengingat yang disetel TANGAN di task tertentu. Batas harian
+   * itu buat notifikasi yang gak diminta — brief, tertunggak, review. Kalau
+   * user niat nyetel "ingetin tiap 2 jam" terus diem-diem cuma dikasih 4,
+   * yang rusak bukan cuma fiturnya, tapi kepercayaan bahwa setelan di app
+   * ini beneran ngaruh.
+   */
+  exempt?: boolean;
 }
 
 const MIN = 60_000;
@@ -85,6 +95,54 @@ function alive(t: Task): boolean {
   return !t.deletedAt && t.status !== "done" && t.status !== "archived";
 }
 
+/**
+ * Batas pengingat yang boleh dihasilkan SATU task.
+ *
+ * Android punya plafon alarm per app (~500). Tanpa batas per task, satu
+ * "tiap 5 menit selama 30 hari" = 8.640 alarm, dan yang jebol bukan cuma
+ * task itu — SEMUA notifikasi app ikut mati. Yang kepotong selalu yang
+ * paling jauh dari tenggat, karena itu yang paling sedikit isinya.
+ */
+const MAX_PER_TASK = 64;
+
+/** Task ini punya jadwal pengingat yang disetel TANGAN, bukan bawaan? */
+function isExplicit(t: Task): boolean {
+  const r = t.reminders;
+  return !!(r && ((r.leads && r.leads.length > 0) || r.repeat));
+}
+
+/**
+ * Satu-satunya tempat yang tau urutan menang antara `reminders`, `reminderMin`,
+ * dan `settings.defaultReminderMin`. Hasilnya menit-sebelum-tenggat, urut dari
+ * yang PALING DEKAT tenggat.
+ *
+ * Urutan itu bukan kosmetik: dia yang bikin pemotongan di `MAX_PER_TASK`
+ * ngebuang yang paling jauh, bukan yang paling penting.
+ */
+export function resolveLeads(t: Task, settings: UserSettings): number[] {
+  const r = t.reminders;
+  const out = new Set<number>();
+
+  for (const m of r?.leads ?? []) {
+    if (Number.isFinite(m) && m > 0) out.add(Math.round(m));
+  }
+
+  const rep = r?.repeat;
+  // `everyMin > 0` bukan basa-basi: 0 atau negatif bikin loop-nya gak berhenti.
+  if (rep && rep.everyMin > 0 && rep.startMin > 0) {
+    // Dari yang paling DEKAT tenggat merambat keluar, jadi kalau kena batas
+    // yang ilang adalah ujung terjauh.
+    for (let m = rep.everyMin; m <= rep.startMin; m += rep.everyMin) {
+      out.add(Math.round(m));
+      if (out.size >= MAX_PER_TASK) break;
+    }
+  }
+
+  if (out.size === 0) out.add(t.reminderMin ?? settings.defaultReminderMin);
+
+  return [...out].sort((a, b) => a - b).slice(0, MAX_PER_TASK);
+}
+
 export interface PlanInput {
   now: Date;
   tasks: readonly Task[];
@@ -94,11 +152,18 @@ export interface PlanInput {
    * (§6.7). Sisanya dijadwalin ulang tiap app dibuka.
    */
   horizonDays?: number;
+  /**
+   * Cakrawala khusus pengingat yang disetel tangan di task. Lebih jauh karena
+   * jumlahnya sedikit — dan karena "ingetin seminggu sebelum" gak ada gunanya
+   * kalau baru kepasang pas app-nya kebuka.
+   */
+  taskHorizonDays?: number;
 }
 
 export function planNotifications(input: PlanInput): PlannedNotification[] {
   const { now, tasks, settings } = input;
   const horizon = now.getTime() + (input.horizonDays ?? 7) * DAY;
+  const taskHorizon = now.getTime() + (input.taskHorizonDays ?? 30) * DAY;
   const quiet = settings.quietHours;
   const out: PlannedNotification[] = [];
 
@@ -111,8 +176,57 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
     // pengingat. Dulu ini kegabung sama cek di bawah, dan itu yang bikin bug.
     if (due.getTime() <= now.getTime()) continue;
 
-    const lead = (t.reminderMin ?? settings.defaultReminderMin) * MIN;
-    let at = new Date(due.getTime() - lead);
+    const leads = resolveLeads(t, settings);
+    const explicit = isExplicit(t);
+    /**
+     * Jadwal yang disetel tangan dapat cakrawala 30 hari; sisanya tetap 7.
+     *
+     * Cakrawala 7 hari itu ada karena brief & review beranak tiap hari. Tapi
+     * pengingat "seminggu sebelum" buat tenggat tiga minggu lagi jatuh di hari
+     * ke-14 — di luar 7 hari, jadi baru kepasang kalau app-nya kebuka. Padahal
+     * orang yang perlu diingetin seminggu sebelumnya justru orang yang lagi
+     * gak buka app-nya. Pengingat setelan tangan itu jarang, jadi 30 hari cuma
+     * nambah segelintir alarm.
+     */
+    const bound = explicit ? taskHorizon : horizon;
+    const multi = leads.length > 1;
+
+    const ticks: { lead: number; at: Date }[] = [];
+
+    for (const lead of leads) {
+      let at = new Date(due.getTime() - lead * MIN);
+
+      if (at.getTime() <= now.getTime()) continue; // udah lewat — diurus di bawah
+      if (at.getTime() > bound) continue;
+
+      /**
+       * Kalau pengingatnya jatuh di jam tenang, digeser ke ujung jam tenang —
+       * TAPI cuma kalau tenggatnya belum lewat waktu itu. Pengingat yang nongol
+       * sesudah deadline itu bukan pengingat, itu sindiran.
+       *
+       * Kalau digesernya kelewat, dulu notifnya dibuang gitu aja. Sekarang
+       * ditarik MUNDUR ke sesaat sebelum jam tenang mulai: tenggat jam 02:00
+       * dini hari mestinya diingetin jam 21:59, waktu orangnya masih melek.
+       *
+       * Yang punya BANYAK pengingat beda: digeser semua ke ujung jam tenang
+       * artinya delapan notifikasi numpuk di jam 06:00 sekaligus. Buat deret,
+       * tick yang jatuh di jam tenang DIBUANG, bukan digeser — masih ada tick
+       * lain yang bakal bunyi di jam wajar.
+       */
+      if (inQuietHours(at, quiet)) {
+        if (multi) continue;
+        const maju = quietEndsAfter(at, quiet);
+        if (maju.getTime() < due.getTime()) {
+          at = maju;
+        } else {
+          const mundur = new Date(quietStartsBefore(at, quiet).getTime() - SOON);
+          if (mundur.getTime() <= now.getTime()) continue;
+          at = mundur;
+        }
+      }
+
+      ticks.push({ lead, at });
+    }
 
     /**
      * Pengingat yang jam tayangnya UDAH LEWAT tapi tenggatnya belum: dimajuin
@@ -122,42 +236,30 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
      * `if (at <= now || at > horizon) continue`. Task yang dibikin lewat chat
      * hampir selalu tenggatnya deket — "meeting jam 3" dibikin jam 2 lewat,
      * lead bawaannya 60 menit, jadi `at` mundur ke jam 2 kurang dan LANGSUNG
-     * kebuang. Pengingatnya gak telat, gak salah jam: gak pernah ada. Persis
-     * kasus yang paling sering kepake, diem-diem gak jalan.
-     */
-    if (at.getTime() <= now.getTime()) at = new Date(now.getTime() + SOON);
-
-    if (at.getTime() > horizon) continue;
-
-    /**
-     * Kalau pengingatnya jatuh di jam tenang, digeser ke ujung jam tenang —
-     * TAPI cuma kalau tenggatnya belum lewat waktu itu. Pengingat yang nongol
-     * sesudah deadline itu bukan pengingat, itu sindiran.
+     * kebuang. Pengingatnya gak telat, gak salah jam: gak pernah ada.
      *
-     * Kalau digesernya kelewat, dulu notifnya dibuang gitu aja. Sekarang
-     * ditarik MUNDUR ke sesaat sebelum jam tenang mulai: tenggat jam 02:00
-     * dini hari mestinya diingetin jam 21:59, waktu orangnya masih melek —
-     * bukan gak diingetin sama sekali.
+     * Syaratnya `nearest` HARUS udah lewat. Tanpa itu, task yang cuma kejauhan
+     * dari cakrawala ikut kena dan malah bunyi sekarang juga.
      */
-    if (inQuietHours(at, quiet)) {
-      const maju = quietEndsAfter(at, quiet);
-      if (maju.getTime() < due.getTime()) {
-        at = maju;
-      } else {
-        const mundur = new Date(quietStartsBefore(at, quiet).getTime() - SOON);
-        if (mundur.getTime() <= now.getTime()) continue;
-        at = mundur;
+    const nearest = new Date(due.getTime() - leads[0]! * MIN);
+    if (ticks.length === 0 && nearest.getTime() <= now.getTime()) {
+      const at = new Date(now.getTime() + SOON);
+      if (at.getTime() < due.getTime() && !inQuietHours(at, quiet)) {
+        ticks.push({ lead: leads[0]!, at });
       }
     }
 
-    out.push({
-      key: `due:${t.id}`,
-      kind: "due",
-      at: at.toISOString(),
-      title: t.title,
-      body: `Jatuh tempo ${hourLabel(due)}.`,
-      data: { taskId: t.id },
-    });
+    for (const tick of ticks) {
+      out.push({
+        key: `due:${t.id}:${tick.lead}`,
+        kind: "due",
+        at: tick.at.toISOString(),
+        title: t.title,
+        body: `Jatuh tempo ${hourLabel(due)}.`,
+        data: { taskId: t.id },
+        ...(explicit ? { exempt: true } : {}),
+      });
+    }
   }
 
   // ── ringkasan tertunggak, 20:00, maks 1×/hari ────────────────────────────
@@ -231,7 +333,20 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
     }
   }
 
-  return capPerDay(out.sort((a, b) => a.at.localeCompare(b.at)), settings.maxNotifPerDay);
+  /**
+   * Yang kebal dipisah DULU, baru sisanya dijatah.
+   *
+   * Kalau digabung, pengingat setelan tangan ikut ngabisin jatah harian dan
+   * malah nendang brief pagi keluar — batasnya jadi ngukur hal yang salah.
+   */
+  const sorted = out.sort((a, b) => a.at.localeCompare(b.at));
+  const kebal = sorted.filter((n) => n.exempt);
+  const dijatah = capPerDay(
+    sorted.filter((n) => !n.exempt),
+    settings.maxNotifPerDay,
+  );
+
+  return [...kebal, ...dijatah].sort((a, b) => a.at.localeCompare(b.at));
 }
 
 /**

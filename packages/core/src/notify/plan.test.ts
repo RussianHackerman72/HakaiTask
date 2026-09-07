@@ -6,7 +6,7 @@
  * tapi "notifnya TIDAK muncul waktu gak seharusnya".
  */
 import { describe, expect, it } from "vitest";
-import { inQuietHours, planNotifications } from "./plan.js";
+import { inQuietHours, planNotifications, resolveLeads } from "./plan.js";
 import { DEFAULT_SETTINGS, makeTask, type Task, type UserSettings } from "../types.js";
 
 const NOW = new Date(2026, 8, 7, 10, 0, 0); // Senin 7 Sep 2026, 10:00
@@ -24,6 +24,15 @@ function plan(tasks: Task[], over: Partial<UserSettings> = {}, now = NOW) {
 
 function keys(tasks: Task[], over: Partial<UserSettings> = {}, now = NOW): string[] {
   return plan(tasks, over, now).map((n) => n.key);
+}
+
+/**
+ * Kunci pengingat sekarang `due:<id>:<lead>` — satu task bisa punya banyak.
+ * Dicek lewat awalan, biar tes "gak dapat notif" gak lulus cuma gara-gara
+ * nebak angka lead-nya salah.
+ */
+function dueKeys(id: string, tasks: Task[], over: Partial<UserSettings> = {}, now = NOW) {
+  return keys(tasks, over, now).filter((k) => k.startsWith(`due:${id}:`));
 }
 
 describe("jam tenang", () => {
@@ -73,7 +82,7 @@ describe("jam tenang", () => {
     // Maju kelewat tenggat, mundur ke 21:59 udah lewat. Gak ada slot jujur.
     const malam = new Date(2026, 8, 7, 23, 30, 0);
     const t = task({ dueAt: new Date(2026, 8, 8, 2, 0).toISOString() });
-    expect(keys([t], {}, malam)).not.toContain("due:t1");
+    expect(dueKeys("t1", [t], {}, malam)).toHaveLength(0);
   });
 });
 
@@ -96,16 +105,16 @@ describe("pengingat tenggat", () => {
   /** Notif buat task yang udah kelar itu bikin orang matiin notifikasi. */
   it("task selesai / arsip / kehapus GAK dapat notif", () => {
     const due = new Date(NOW.getTime() + 5 * HOUR).toISOString();
-    expect(keys([task({ id: "a", dueAt: due, status: "done" })])).not.toContain("due:a");
-    expect(keys([task({ id: "b", dueAt: due, status: "archived" })])).not.toContain("due:b");
+    expect(dueKeys("a", [task({ id: "a", dueAt: due, status: "done" })])).toHaveLength(0);
+    expect(dueKeys("b", [task({ id: "b", dueAt: due, status: "archived" })])).toHaveLength(0);
     expect(
-      keys([task({ id: "c", dueAt: due, deletedAt: NOW.toISOString() })]),
-    ).not.toContain("due:c");
+      dueKeys("c", [task({ id: "c", dueAt: due, deletedAt: NOW.toISOString() })]),
+    ).toHaveLength(0);
   });
 
   it("yang udah lewat gak dijadwalin ulang", () => {
     const t = task({ dueAt: new Date(NOW.getTime() - HOUR).toISOString() });
-    expect(keys([t])).not.toContain("due:t1");
+    expect(dueKeys("t1", [t])).toHaveLength(0);
   });
 
   /**
@@ -128,17 +137,148 @@ describe("pengingat tenggat", () => {
   it("lead-nya lewat DAN tenggatnya lewat → tetap gak dijadwalin", () => {
     // Batas fix di atas: yang dimajuin cuma yang tenggatnya masih di depan.
     const t = task({ dueAt: new Date(NOW.getTime() - 30 * 60_000).toISOString() });
-    expect(keys([t])).not.toContain("due:t1");
+    expect(dueKeys("t1", [t])).toHaveLength(0);
   });
 
   it("di luar cakrawala 7 hari gak dijadwalin", () => {
     const t = task({ dueAt: new Date(NOW.getTime() + 30 * 24 * HOUR).toISOString() });
-    expect(keys([t])).not.toContain("due:t1");
+    expect(dueKeys("t1", [t])).toHaveLength(0);
   });
 
   it("tanpa tenggat gak dapat pengingat", () => {
     // Review mingguan TETAP dijadwalin — dia gak gantung sama task sama sekali.
     expect(keys([task({})]).filter((k) => k.startsWith("due:"))).toHaveLength(0);
+  });
+});
+
+describe("jadwal pengingat per task", () => {
+  const DAY_MIN = 1440;
+
+  it("resolveLeads: urut dari yang paling DEKAT tenggat", () => {
+    const t = task({ reminders: { leads: [60, 10080, 1440] } });
+    expect(resolveLeads(t, settings)).toEqual([60, 1440, 10080]);
+  });
+
+  it("resolveLeads: tanpa apa-apa jatuh ke bawaan setelan", () => {
+    expect(resolveLeads(task({}), settings)).toEqual([60]);
+    expect(resolveLeads(task({ reminderMin: 15 }), settings)).toEqual([15]);
+  });
+
+  it("resolveLeads: `reminders` nimpa `reminderMin`", () => {
+    const t = task({ reminderMin: 15, reminders: { leads: [120] } });
+    expect(resolveLeads(t, settings)).toEqual([120]);
+  });
+
+  it("resolveLeads: repeat jadi deret, berhenti di tenggat", () => {
+    // Mulai 3 hari sebelum, tiap 1 hari → 3 pengingat.
+    const t = task({ reminders: { repeat: { startMin: 3 * DAY_MIN, everyMin: DAY_MIN } } });
+    expect(resolveLeads(t, settings)).toEqual([1440, 2880, 4320]);
+  });
+
+  it("resolveLeads: leads + repeat digabung tanpa kembar", () => {
+    const t = task({
+      reminders: { leads: [1440, 60], repeat: { startMin: 2 * DAY_MIN, everyMin: DAY_MIN } },
+    });
+    expect(resolveLeads(t, settings)).toEqual([60, 1440, 2880]);
+  });
+
+  /**
+   * Tanpa batas ini, "tiap 5 menit selama 30 hari" = 8.640 alarm — dan yang
+   * jebol bukan cuma task itu, tapi plafon alarm SELURUH app.
+   */
+  it("resolveLeads: dibatasi per task, yang kepotong yang paling jauh", () => {
+    const t = task({ reminders: { repeat: { startMin: 30 * DAY_MIN, everyMin: 5 } } });
+    const leads = resolveLeads(t, settings);
+    expect(leads).toHaveLength(64);
+    expect(leads[0]).toBe(5); // yang paling deket tenggat selamat
+    expect(Math.max(...leads)).toBe(64 * 5);
+  });
+
+  it("resolveLeads: everyMin 0 gak bikin loop gak berhenti", () => {
+    const t = task({ reminders: { repeat: { startMin: 1440, everyMin: 0 } } });
+    expect(resolveLeads(t, settings)).toEqual([60]); // jatuh ke bawaan
+  });
+
+  it("satu task bisa punya banyak notif, kuncinya beda-beda", () => {
+    const t = task({
+      dueAt: new Date(NOW.getTime() + 5 * HOUR).toISOString(),
+      reminders: { leads: [60, 120] },
+    });
+    expect(dueKeys("t1", [t]).sort()).toEqual(["due:t1:120", "due:t1:60"]);
+  });
+
+  /**
+   * Inti fitur "ingetin seminggu sebelum": cakrawala 7 hari bikin pengingatnya
+   * gak pernah kepasang buat tenggat yang masih jauh.
+   */
+  it("setelan tangan nembus cakrawala 7 hari", () => {
+    const dueAt = new Date(NOW.getTime() + 21 * 24 * HOUR).toISOString();
+
+    // Bawaan: masih kena batas 7 hari.
+    expect(dueKeys("t1", [task({ dueAt })])).toHaveLength(0);
+
+    // Disetel tangan "seminggu sebelum" → hari ke-14, di luar 7 tapi dalam 30.
+    const manual = task({ dueAt, reminders: { leads: [7 * DAY_MIN] } });
+    expect(dueKeys("t1", [manual])).toEqual(["due:t1:10080"]);
+  });
+
+  it("di luar 30 hari tetap gak dijadwalin", () => {
+    const t = task({
+      dueAt: new Date(NOW.getTime() + 60 * 24 * HOUR).toISOString(),
+      reminders: { leads: [60] },
+    });
+    expect(dueKeys("t1", [t])).toHaveLength(0);
+  });
+
+  /**
+   * Kalau delapan tick semalam digeser semua ke ujung jam tenang, jam 06:00
+   * bunyi delapan kali. Buat deret, yang jatuh di jam tenang DIBUANG.
+   */
+  it("deret: tick di jam tenang dibuang, bukan digeser numpuk", () => {
+    // Tenggat besok 12:00. Tiap 1 jam selama 12 jam → beberapa jatuh 00:00–06:00.
+    const t = task({
+      dueAt: new Date(2026, 8, 8, 12, 0).toISOString(),
+      reminders: { repeat: { startMin: 12 * 60, everyMin: 60 } },
+    });
+    const ats = plan([t])
+      .filter((n) => n.kind === "due")
+      .map((n) => new Date(n.at));
+
+    expect(ats.length).toBeGreaterThan(0);
+    for (const at of ats) {
+      expect(inQuietHours(at, ["22:00", "06:00"])).toBe(false);
+    }
+    // Gak ada dua notif di detik yang sama.
+    expect(new Set(ats.map((d) => d.getTime())).size).toBe(ats.length);
+  });
+
+  /**
+   * Batas harian itu buat notif yang GAK diminta. Kalau setelan tangan ikut
+   * dipotong, user nyetel "tiap 2 jam" dan diem-diem cuma dapat 4.
+   */
+  it("setelan tangan kebal batas harian, otomatis tetap kena", () => {
+    const dueAt = new Date(2026, 8, 8, 20, 0).toISOString();
+    const t = task({
+      dueAt,
+      // Tiap 1 jam selama 10 jam — jauh di atas maxNotifPerDay = 2.
+      reminders: { repeat: { startMin: 10 * 60, everyMin: 60 } },
+    });
+
+    const got = plan([t], { maxNotifPerDay: 2 });
+    expect(got.filter((n) => n.kind === "due").length).toBeGreaterThan(2);
+    // Ringkasan cuma dibikin kalau ADA yang kepotong — dan yang kebal gak.
+    expect(got.filter((n) => n.kind === "due").every((n) => n.exempt)).toBe(true);
+  });
+
+  it("bawaan TETAP kena batas harian", () => {
+    const many = Array.from({ length: 6 }, (_, i) =>
+      task({
+        id: `t${i}`,
+        dueAt: new Date(2026, 8, 7, 15, 10 * i).toISOString(),
+      }),
+    );
+    const got = plan(many, { maxNotifPerDay: 3 });
+    expect(got.some((n) => n.kind === "summary")).toBe(true);
   });
 });
 

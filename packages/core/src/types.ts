@@ -20,6 +20,29 @@ export interface Subtask {
   order: number;
 }
 
+/**
+ * Jadwal pengingat per task — OPSIONAL. Task tanpa ini kelakuannya persis
+ * kayak dulu: satu pengingat, `reminderMin` atau bawaan setelan.
+ *
+ * Dua bentuk, boleh dipakai bareng:
+ *
+ *   leads   pengingat awal. [10080, 1440, 60] = seminggu, sehari, sejam
+ *           sebelum tenggat.
+ *   repeat  pengingat berulang. Mulai `startMin` sebelum tenggat, bunyi tiap
+ *           `everyMin`, berhenti PAS tenggat.
+ *
+ * `repeat` sengaja dibatasi jendela sebelum tenggat, bukan "tiap N dari
+ * sekarang". Bedanya: jumlah notifikasinya bisa dihitung SEBELUM dijadwalin
+ * (`startMin / everyMin`), jadi gak ada bentuk input yang diam-diam bikin
+ * ratusan alarm.
+ */
+export interface TaskReminders {
+  /** Menit sebelum tenggat. */
+  leads?: number[];
+  /** Mulai `startMin` sebelum tenggat, tiap `everyMin`, sampai tenggat. */
+  repeat?: { startMin: number; everyMin: number };
+}
+
 export interface Task {
   id: string;
   userId: string;
@@ -42,7 +65,13 @@ export interface Task {
   tags: string[];
 
   // notifikasi & review
+  /**
+   * Pengingat tunggal, dalam menit sebelum tenggat. Dipertahankan: parser
+   * masih nulis ke sini ("ingetin 30 menit sebelumnya") dan baris lama masih
+   * pakai. `reminders` yang lebih kaya menang kalau dua-duanya ada.
+   */
   reminderMin?: number;
+  reminders?: TaskReminders;
   rescheduleCount: number;
 
   // struktur

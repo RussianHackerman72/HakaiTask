@@ -24,6 +24,7 @@ const TO_COLUMN: Record<string, string> = {
   recurrence: "recurrence",
   recurrenceParentId: "recurrence_parent_id",
   reminderMin: "reminder_min",
+  reminders: "reminders",
   rescheduleCount: "reschedule_count",
   createdAt: "created_at",
   updatedAt: "updated_at",
