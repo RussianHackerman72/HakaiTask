@@ -11,6 +11,7 @@ export { Field } from "./Field";
 export { Row } from "./Row";
 export { Section } from "./Section";
 export { Sheet } from "./Sheet";
+export { DateTimeField } from "./DateTimeField";
 // Checkbox & Strike sengaja lewat sini juga sekarang — dua-duanya udah
 // diimpor lewat jalur berkas di tiga layar, dan barel yang cuma sebagian
 // bikin orang nebak-nebak mana yang boleh lewat mana.
