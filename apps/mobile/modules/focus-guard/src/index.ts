@@ -32,6 +32,13 @@ export interface StartGuardOptions {
   endsAt: number | null;
   /** Nyalain Do Not Disturb selama sesi. */
   dnd: boolean;
+  /**
+   * Mode ketat: yang dihitung "lagi di luar HaKaiTask", bukan cuma app yang
+   * ada di blocklist. Telepon, Setelan, dan papan ketik selalu dikecualiin.
+   */
+  strict: boolean;
+  /** Tenggang di luar app sebelum ditegur, detik. Native mengunci minimal 5. */
+  graceSec: number;
 }
 
 export interface BlockedAttemptEvent {

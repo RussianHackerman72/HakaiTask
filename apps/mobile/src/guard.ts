@@ -11,6 +11,16 @@ import { FocusGuard } from "../modules/focus-guard";
 
 const BLOCKED_KEY = "hakaitask-guard-blocked";
 const DND_KEY = "hakaitask-guard-dnd";
+const STRICT_KEY = "hakaitask-guard-strict";
+const GRACE_KEY = "hakaitask-guard-grace";
+
+/**
+ * 15 detik. Cukup lama buat ngintip notifikasi, ngangkat telepon, atau ngecek
+ * jam di beranda tanpa ketemu tembok; cukup pendek buat kena scroll yang
+ * beneran nyasar.
+ */
+const DEFAULT_GRACE_SEC = 15;
+const MIN_GRACE_SEC = 5;
 
 // Store luar yang mini — biar layar setup dan timer lihat nilai yang sama.
 const listeners = new Set<() => void>();
@@ -69,14 +79,52 @@ function snapshotDnd(): boolean {
   return dndCache;
 }
 
-export function useGuardSettings(): { dnd: boolean; setDnd: (v: boolean) => void } {
+/**
+ * Mode ketat MATI kalau gak ada catatannya. Bukan bawaan yang kebetulan —
+ * fitur yang bisa nahan app apa pun jangan pernah nyala tanpa diminta.
+ */
+let strictCache = platform().kv.get(STRICT_KEY) === "1";
+function snapshotStrict(): boolean {
+  return strictCache;
+}
+
+let graceCache = Number(platform().kv.get(GRACE_KEY) ?? "") || DEFAULT_GRACE_SEC;
+function snapshotGrace(): number {
+  return graceCache;
+}
+
+export function useGuardSettings(): {
+  dnd: boolean;
+  setDnd: (v: boolean) => void;
+  strict: boolean;
+  setStrict: (v: boolean) => void;
+  graceSec: number;
+  setGraceSec: (v: number) => void;
+} {
   const dnd = useSyncExternalStore(subscribe, snapshotDnd, snapshotDnd);
+  const strict = useSyncExternalStore(subscribe, snapshotStrict, snapshotStrict);
+  const graceSec = useSyncExternalStore(subscribe, snapshotGrace, snapshotGrace);
+
   const setDnd = useCallback((v: boolean) => {
     dndCache = v;
     platform().kv.set(DND_KEY, v ? "1" : "0");
     emit();
   }, []);
-  return { dnd, setDnd };
+
+  const setStrict = useCallback((v: boolean) => {
+    strictCache = v;
+    platform().kv.set(STRICT_KEY, v ? "1" : "0");
+    emit();
+  }, []);
+
+  const setGraceSec = useCallback((v: number) => {
+    const clamped = Math.max(MIN_GRACE_SEC, Math.round(v));
+    graceCache = clamped;
+    platform().kv.set(GRACE_KEY, String(clamped));
+    emit();
+  }, []);
+
+  return { dnd, setDnd, strict, setStrict, graceSec, setGraceSec };
 }
 
 /**
@@ -127,17 +175,23 @@ export function startGuard(
      * `GuardState` di sisi Kotlin: himpunan kosong = `shouldBlock` selalu
      * false.
      */
-    const blokirJalan = blocked.length > 0 && FocusGuard.isAccessibilityEnabled();
+    // Mode ketat sama daftar blokir sama-sama nyandar ke AccessibilityService,
+    // jadi dua-duanya mati kalau izinnya gak ada.
+    const a11y = FocusGuard.isAccessibilityEnabled();
+    const strict = snapshotStrict();
+    const blokirJalan = a11y && (blocked.length > 0 || strict);
 
     FocusGuard.startGuard({
-      blocked: blokirJalan ? blocked : [],
+      blocked: a11y ? blocked : [],
       title,
       ...(taskId ? { taskId } : {}),
       endsAt: endsAt ? Date.parse(endsAt) : null,
       dnd: snapshotDnd(),
+      strict: a11y && strict,
+      graceSec: snapshotGrace(),
     });
 
-    if (blocked.length === 0) return "kosong";
+    if (blocked.length === 0 && !strict) return "kosong";
     return blokirJalan ? "menjaga" : "tanpa-izin";
   } catch (e) {
     // Modul native gak ada (misal build lama) — sesinya tetap jalan, tapi

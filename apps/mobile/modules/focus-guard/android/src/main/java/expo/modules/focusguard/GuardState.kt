@@ -80,19 +80,57 @@ object GuardState {
   @Volatile
   var onAction: ((String) -> Unit)? = null
 
-  fun start(packages: Set<String>) {
+  /**
+   * Mode ketat: yang dijaga bukan daftar app, tapi "lagi di luar HaKaiTask".
+   *
+   * Kenapa begini dan bukan "hitung tiap kali user keluar app": Android gak
+   * ngasih kail yang bunyi SEBELUM orang pergi. `onPause`/`onStop` bunyinya
+   * sesudah, dan tombol home emang sengaja gak bisa disadap — app yang bisa
+   * nahan orang di dalamnya itu app yang gak bisa ditinggal.
+   *
+   * Jadi yang diamati KEADAAN, bukan kejadian: AccessibilityService udah tau
+   * app apa yang lagi di depan, tinggal dibalik pertanyaannya dari "app ini
+   * diblokir gak?" jadi "app ini HaKaiTask bukan?".
+   *
+   * Efek sampingnya bagus: satuannya jadi "lagi di app lain", bukan "keluar
+   * dari HaKaiTask" — jadi layar mati, laci notifikasi, dan rotasi gak
+   * kehitung apa-apa. Itu yang bikin angkanya gak balik kembung kayak bug
+   * satu-buka-kehitung-dua dulu.
+   */
+  @Volatile
+  var strict: Boolean = false
+
+  /**
+   * Berapa lama boleh di luar sebelum ditegur. INI inti desainnya.
+   *
+   * Kalau negurnya pas detik pertama app lain naik, ngintip notifikasi,
+   * ngangkat telepon, atau ngecek jam di beranda semuanya kena tembok — dan
+   * fitur yang negur pas orang lagi bener itu fitur yang dimatiin minggu
+   * depan. Di bawah ambang ini gak ada yang ditampilin DAN gak ada yang
+   * dihitung: keluar sebentar terus balik itu bukan gangguan.
+   */
+  @Volatile
+  var graceMs: Long = 15_000L
+
+  fun start(packages: Set<String>, strictMode: Boolean, grace: Long) {
     blocked = packages
+    strict = strictMode
+    graceMs = grace
     guarding.set(true)
   }
 
   fun stop() {
     guarding.set(false)
     blocked = emptySet()
+    strict = false
     lastBlockAt = 0L
     lastBlockedPackage = null
   }
 
   fun isGuarding(): Boolean = guarding.get()
+
+  /** Paket ini ada di daftar blokir? Dipakai biar mode ketat gak dobel kerja. */
+  fun isListed(packageName: String): Boolean = blocked.contains(packageName)
 
   /**
    * Balikin true kalau paket ini harus dihalang SEKARANG.

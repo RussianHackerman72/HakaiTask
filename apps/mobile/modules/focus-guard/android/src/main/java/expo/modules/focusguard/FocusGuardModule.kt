@@ -18,6 +18,10 @@ class StartGuardOptions : Record {
   @Field var taskId: String? = null
   @Field var endsAt: Long? = null
   @Field var dnd: Boolean = false
+  /** Mode ketat: apa pun yang bukan HaKaiTask kehitung, bukan cuma blocklist. */
+  @Field var strict: Boolean = false
+  /** Tenggang sebelum ditegur, detik. Di bawah ini gak dihitung & gak ditampilin. */
+  @Field var graceSec: Int = 15
 }
 
 /**
@@ -135,7 +139,13 @@ class FocusGuardModule : Module() {
     // ── sesi ────────────────────────────────────────────────────────────────
 
     Function("startGuard") { options: StartGuardOptions ->
-      GuardState.start(options.blocked.toSet())
+      // Tenggang dikunci minimal 5 detik. Di bawah itu praktis gak ada
+      // tenggangnya, dan tiap kali ngintip notifikasi kena tembok.
+      GuardState.start(
+        options.blocked.toSet(),
+        options.strict,
+        options.graceSec.coerceAtLeast(5).toLong() * 1000L,
+      )
 
       if (options.dnd) setDnd(true)
 

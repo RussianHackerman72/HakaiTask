@@ -24,6 +24,7 @@ import { Pill } from "../../src/ui/Pill";
 import { Chip } from "../../src/ui/Chip";
 import { Tappable } from "../../src/ui/Pressable";
 import { Checkbox } from "../../src/ui/Checkbox";
+import { Switch } from "../../src/ui/Switch";
 import { useTheme } from "../../src/theme";
 import { useBlocklist, useGuardSettings } from "../../src/guard";
 
@@ -31,7 +32,7 @@ export default function FocusSetup() {
   const th = useTheme();
   const router = useRouter();
   const { blocked, toggle } = useBlocklist();
-  const { dnd, setDnd } = useGuardSettings();
+  const { dnd, setDnd, strict, setStrict, graceSec, setGraceSec } = useGuardSettings();
 
   const [perms, setPerms] = useState({ a11y: false, dnd: false });
   const [apps, setApps] = useState<InstalledApp[]>([]);
@@ -164,6 +165,51 @@ export default function FocusSetup() {
             <T variant="bodySm">Nyalain jangan ganggu tiap sesi</T>
           </View>
         )}
+
+        {/*
+          TODO(fase 5): pindah ke layar Setelan begitu ada. Di sini dulu karena
+          layar ini yang de-facto setelan fokus.
+        */}
+        <Card style={{ gap: th.space[2] }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: th.space[2] }}>
+            <View style={{ flex: 1 }}>
+              <T variant="h2" style={{ fontSize: 15 }}>Mode ketat</T>
+              <T variant="bodySm" tone="ink70">
+                Bukan cuma app di daftar — apa pun yang kamu buka selain HaKaiTask
+                kehitung, kalau kelamaan.
+              </T>
+            </View>
+            <Switch value={strict} onChange={setStrict} />
+          </View>
+
+          {strict && (
+            <>
+              <T variant="bodySm" tone="ink70">
+                Ditegur kalau di luar app lebih dari:
+              </T>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {[10, 15, 30, 60].map((s) => (
+                  <Chip
+                    key={s}
+                    label={s < 60 ? `${s} detik` : "1 menit"}
+                    active={graceSec === s}
+                    onPress={() => setGraceSec(s)}
+                  />
+                ))}
+              </View>
+              <T variant="meta" tone="ink40">
+                Telepon, Setelan, dan papan ketik gak pernah kehitung — sesi fokus
+                gak boleh bikin kamu gagal ngangkat telepon. Layar mati dan laci
+                notifikasi juga enggak.
+              </T>
+              {!perms.a11y && (
+                <T variant="bodySm" tone="accent">
+                  Butuh izin aksesibilitas di atas buat jalan.
+                </T>
+              )}
+            </>
+          )}
+        </Card>
 
         <View style={{ gap: th.space[2] }}>
           <T variant="h2" style={{ fontSize: 15 }}>
