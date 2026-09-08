@@ -202,6 +202,30 @@ export function startGuard(
   }
 }
 
+/**
+ * Keadaan penjaga SEKARANG, tanpa nyalain atau matiin apa pun.
+ *
+ * Kenapa ini perlu ada terpisah dari nilai balik `startGuard`: nilai balik itu
+ * cuma potret di DETIK sesi dimulai. Padahal izin aksesibilitas bisa ilang di
+ * tengah sesi — dan bukan kasus langka: paksa berhenti app bikin Android
+ * nyabut izinnya sendiri, dan itu perilaku bawaan yang bahkan kita tulis di
+ * layar setelan.
+ *
+ * Tanpa ini, sesi yang izinnya baru dicabut kelihatan normal: timer jalan,
+ * notifikasi nongol, gak ada app yang ketahan. Persis kebohongan yang mau
+ * dihapus, cuma lewat pintu belakang.
+ */
+export function guardStatus(): GuardStatus {
+  const blocked = snapshotBlocked();
+  if (blocked.length === 0 && !snapshotStrict()) return "kosong";
+  try {
+    return FocusGuard.isAccessibilityEnabled() ? "menjaga" : "tanpa-izin";
+  } catch (e) {
+    if (__DEV__) console.warn("[guard] cek izin gagal:", e);
+    return "gagal";
+  }
+}
+
 export function stopGuard(): void {
   try {
     FocusGuard.stopGuard();

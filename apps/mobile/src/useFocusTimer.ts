@@ -7,6 +7,7 @@
  * mundur yang perlu "dilanjutin".
  */
 import { useCallback, useEffect, useState } from "react";
+import { AppState } from "react-native";
 import {
   endFocus,
   focusView,
@@ -20,7 +21,7 @@ import {
 import { useKaiStore } from "@hakaitask/core/store";
 import { newId } from "@hakaitask/app/tasks";
 import { cancelTimerDone, scheduleTimerDone } from "./notifications";
-import { startGuard, stopGuard, type GuardStatus } from "./guard";
+import { guardStatus, startGuard, stopGuard, type GuardStatus } from "./guard";
 import { FocusGuard } from "../modules/focus-guard";
 import { endsAt as endsAtOf } from "@hakaitask/core/focus";
 
@@ -62,6 +63,38 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
   // Ditaruh di state, bukan diturunin ulang tiap render: `isAccessibilityEnabled()`
   // itu panggilan native, dan manggilnya 2x sedetik ikut tick timer sia-sia.
   const [guard, setGuard] = useState<GuardStatus | null>(null);
+
+  /**
+   * Turunin ulang keadaan penjaga pas MOUNT dan tiap app balik ke depan.
+   *
+   * Tanpa ini, `guard` cuma keisi di tiga titik transisi — start, resume,
+   * finish — dan itu bikin dua kasus paling sering kejadian lolos:
+   *
+   *   1. App-nya restart di tengah sesi. Sesinya diturunin ulang dari store,
+   *      tapi `guard` balik ke null, jadi peringatannya ilang.
+   *   2. Izin aksesibilitasnya dicabut DI TENGAH sesi. Paksa berhenti app
+   *      bikin Android nyabut sendiri — perilaku bawaan yang bahkan kita
+   *      tulis sendiri di layar setelan.
+   *
+   * Dua-duanya balik ke bug yang mau dihapus: sesi yang kelihatan dijaga
+   * padahal enggak. Dites di emulator — paksa berhenti, buka lagi, layarnya
+   * diem aja.
+   *
+   * Deps sengaja kosong: `setGuard` di start/resume/finish itu hasil dari aksi
+   * user yang lagi di depan layar, jadi gak bakal balapan sama efek ini.
+   */
+  useEffect(() => {
+    const sync = () => {
+      const f = useKaiStore.getState().focus;
+      const aktif = !!f && f.phase === "work" && f.runningSince !== undefined;
+      setGuard(aktif ? guardStatus() : null);
+    };
+    sync();
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active") sync();
+    });
+    return () => sub.remove();
+  }, []);
 
   // Jangan tick pas dijeda — gak ada yang berubah, dan itu cuma bikin render
   // dua kali sedetik tanpa alasan.
