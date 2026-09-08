@@ -727,6 +727,51 @@ dan kenapa — bagian yang biasanya hilang begitu kode ditulis.
 
 ---
 
+## Ngirim perubahan: update dulu, build belakangan
+
+Android-nya dipasang lewat **EAS Update**, dan itu bukan pelengkap — itu jalur
+BAWAAN. Build penuh cuma dipakai kalau perubahannya nyentuh sisi native.
+
+```bash
+# jalur biasa — sekitar satu menit
+cd apps/mobile
+npx eas-cli update --branch preview --environment preview --message "..."
+
+# cuma kalau nyentuh native — sekitar dua puluh menit
+npx eas-cli build --platform android --profile preview
+```
+
+**Bisa lewat update:** apa pun yang JS/TS. Layar, komponen, `packages/core`,
+`packages/app`, aturan penjadwalan notifikasi, teks, gaya, aset.
+
+**HARUS build ulang:**
+
+| Yang berubah | Kenapa |
+|---|---|
+| `modules/focus-guard/**` (Kotlin) | kode native, gak ada di bundel JS |
+| dependensi native baru | modulnya harus ikut dikompilasi |
+| `android.permissions` di `app.json` | masuk ke AndroidManifest pas build |
+| daftar `plugins` di `app.json` | config plugin jalan pas prebuild |
+| `version` di `app.json` | lihat jebakan di bawah |
+
+**Tiga hal yang gampang bikin salah paham:**
+
+1. `runtimeVersion` pakai `{policy: "appVersion"}`, jadi nilainya ngikut
+   `version` — sekarang `0.1.0`. Naikin `version` berarti SEMUA app yang udah
+   kepasang berhenti nerima update sampai orangnya pasang APK baru. Jadi
+   naikin versi itu keputusan rilis, bukan kerapian.
+2. `fallbackToCacheTimeout: 0` bikin app selalu buka pakai bundel yang udah
+   ada, lalu narik update di belakang. Efeknya: update kepasang di bukaan
+   BERIKUTNYA. Sekali buka sesudah publish, yang kelihatan masih versi lama —
+   itu normal, bukan update yang gagal.
+3. `eas update` maksa `--environment` kalau dijalanin `--non-interactive`.
+
+Contoh nyatanya ada di §Catatan lapangan: dua bug panel bawah yang bikin
+tombol Simpan gak keraih dibenerin dan sampai ke perangkat lewat update,
+tanpa build sama sekali.
+
+---
+
 ## Catatan lapangan
 
 Bagian ini buat yang penasaran sama isi mesinnya. Semua di bawah ini **bug yang
