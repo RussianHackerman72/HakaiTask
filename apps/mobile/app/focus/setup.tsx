@@ -14,7 +14,7 @@
  * intinya ikut gak kepakai.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AppState, ScrollView, TextInput, View } from "react-native";
+import { AppState, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { FocusGuard, type InstalledApp } from "../../modules/focus-guard";
 import { Screen } from "../../src/ui/Screen";
@@ -25,6 +25,7 @@ import { Chip } from "../../src/ui/Chip";
 import { Tappable } from "../../src/ui/Pressable";
 import { Checkbox } from "../../src/ui/Checkbox";
 import { Switch } from "../../src/ui/Switch";
+import { Input } from "../../src/ui/Input";
 import { useTheme } from "../../src/theme";
 import { useBlocklist, useGuardSettings } from "../../src/guard";
 
@@ -216,19 +217,11 @@ export default function FocusSetup() {
             App yang ditahan {blocked.length > 0 ? `(${blocked.length})` : ""}
           </T>
 
-          <TextInput
+          <Input
+            tone="filled"
             value={filter}
             onChangeText={setFilter}
             placeholder="Cari app…"
-            placeholderTextColor={th.c.ink40}
-            style={{
-              backgroundColor: th.c.surface,
-              borderRadius: th.radius.full,
-              paddingHorizontal: 18,
-              paddingVertical: 10,
-              color: th.c.ink,
-              ...th.t.bodySm,
-            }}
           />
 
           {apps.length === 0 ? (

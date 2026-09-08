@@ -7,7 +7,7 @@
  * kelihatan walau layarnya lagi kebuka.
  */
 import { useEffect, useState } from "react";
-import { ScrollView, TextInput, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import type { Priority } from "@hakaitask/core";
 import { useKaiStore } from "@hakaitask/core/store";
@@ -36,6 +36,8 @@ import { Chip } from "../../src/ui/Chip";
 import { Pill } from "../../src/ui/Pill";
 import { Tappable } from "../../src/ui/Pressable";
 import { Checkbox, Strike } from "../../src/ui/Checkbox";
+import { Input } from "../../src/ui/Input";
+import { Section } from "../../src/ui/Section";
 import { useTheme } from "../../src/theme";
 
 const PRIORITIES: Priority[] = [1, 2, 3, 4];
@@ -90,7 +92,7 @@ export default function TaskDetail() {
           </View>
 
           <View style={{ flex: 1 }}>
-            <TextInput
+            <Input
               value={title}
               onChangeText={setTitle}
               onBlur={() => {
@@ -98,7 +100,8 @@ export default function TaskDetail() {
                 if (next && next !== task.title) patchTask(task.id, { title: next });
                 else setTitle(task.title);
               }}
-              style={{ ...th.t.h2, fontSize: 24, lineHeight: 32, color: th.c.ink, padding: 0 }}
+              variant="h2"
+              style={{ fontSize: 24, lineHeight: 32 }}
               multiline
             />
             <Strike done={done} />
@@ -182,7 +185,7 @@ export default function TaskDetail() {
             ))}
           </View>
 
-          <TextInput
+          <Input
             value={newSubtask}
             onChangeText={setNewSubtask}
             onSubmitEditing={() => {
@@ -192,14 +195,13 @@ export default function TaskDetail() {
               setNewSubtask("");
             }}
             placeholder="Tambah subtask..."
-            placeholderTextColor={th.c.ink40}
             returnKeyType="done"
-            style={{ ...th.t.bodySm, color: th.c.ink, marginTop: 12, padding: 0 }}
+            style={{ marginTop: 12 }}
           />
         </Section>
 
         <Section label="Catatan">
-          <TextInput
+          <Input
             value={notes}
             onChangeText={setNotes}
             onBlur={() => {
@@ -208,9 +210,8 @@ export default function TaskDetail() {
               }
             }}
             placeholder="Tulis catatan..."
-            placeholderTextColor={th.c.ink40}
             multiline
-            style={{ ...th.t.bodySm, color: th.c.ink, padding: 0, minHeight: 60 }}
+            style={{ minHeight: 60 }}
           />
         </Section>
 
@@ -249,18 +250,6 @@ export default function TaskDetail() {
         </View>
       </ScrollView>
     </Screen>
-  );
-}
-
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  const th = useTheme();
-  return (
-    <View style={{ marginTop: th.space[5] }}>
-      <T variant="h2" style={{ fontSize: 15, marginBottom: th.space[2] }}>
-        {label}
-      </T>
-      {children}
-    </View>
   );
 }
 

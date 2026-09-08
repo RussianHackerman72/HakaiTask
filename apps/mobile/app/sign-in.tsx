@@ -3,11 +3,12 @@
  * dan yang didapat dari masuk cuma satu — sync lintas perangkat.
  */
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { Screen } from "../src/ui/Screen";
 import { T } from "../src/ui/T";
 import { Pill } from "../src/ui/Pill";
+import { Input } from "../src/ui/Input";
 import { useTheme } from "../src/theme";
 import { useSignIn } from "../src/auth";
 
@@ -41,23 +42,16 @@ export default function SignIn() {
           </T>
         ) : (
           <View style={{ gap: 10, marginTop: th.space[3] }}>
-            <TextInput
+            <Input
+              tone="filled"
+              variant="body"
               value={email}
               onChangeText={setEmail}
               placeholder="email kamu"
-              placeholderTextColor={th.c.ink40}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
               inputMode="email"
-              style={{
-                backgroundColor: th.c.surface,
-                borderRadius: th.radius.full,
-                paddingHorizontal: 20,
-                paddingVertical: 14,
-                color: th.c.ink,
-                ...th.t.body,
-              }}
             />
             <Pill
               label={busy ? "Mengirim…" : "Kirim link masuk"}
