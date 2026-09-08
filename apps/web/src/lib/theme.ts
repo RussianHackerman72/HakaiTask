@@ -1,17 +1,28 @@
 /**
  * Dark mode (§5.1 #8) — ikut sistem sampai user milih sendiri.
- * Nilai warnanya sendiri hidup di CSS variable dari packages/tokens.
+ *
+ * Kebijakannya ada di `packages/app/src/theme.ts`, dipakai bareng sama mobile.
+ * Yang tinggal di sini cuma bagian yang emang cuma ada di web: nyetel atribut
+ * `data-theme` biar CSS variable dari packages/tokens kebalik, dan dengerin
+ * `prefers-color-scheme`.
+ *
+ * Dulu berkas ini punya salinannya sendiri — kunci yang sama, arti "system"
+ * yang sama, aturan toggle yang sama — ditulis dua kali. Gak pernah kelihatan
+ * salah karena kebetulan dua-duanya sama persis, dan itu justru masalahnya:
+ * yang pertama diubah cuma di satu sisi bakal bikin web sama mobile beda
+ * pendapat soal tema, lewat kunci penyimpanan yang sama.
  */
 import { useCallback, useEffect, useState } from "react";
+import {
+  nextTheme,
+  readThemePref,
+  resolveTheme,
+  writeThemePref,
+  type ResolvedTheme,
+  type ThemePref,
+} from "@hakaitask/app/theme";
 
-export type ThemePref = "system" | "light" | "dark";
-
-const KEY = "hakaitask-theme";
-
-function read(): ThemePref {
-  const raw = localStorage.getItem(KEY);
-  return raw === "light" || raw === "dark" ? raw : "system";
-}
+export type { ThemePref };
 
 function apply(pref: ThemePref): void {
   const root = document.documentElement;
@@ -21,10 +32,10 @@ function apply(pref: ThemePref): void {
 
 export function useTheme(): {
   pref: ThemePref;
-  resolved: "light" | "dark";
+  resolved: ResolvedTheme;
   toggle: () => void;
 } {
-  const [pref, setPref] = useState<ThemePref>(() => read());
+  const [pref, setPref] = useState<ThemePref>(() => readThemePref());
   const [systemDark, setSystemDark] = useState(
     () => window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
@@ -38,15 +49,13 @@ export function useTheme(): {
 
   useEffect(() => {
     apply(pref);
-    if (pref === "system") localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, pref);
+    writeThemePref(pref);
   }, [pref]);
 
-  const resolved: "light" | "dark" =
-    pref === "system" ? (systemDark ? "dark" : "light") : pref;
+  const resolved = resolveTheme(pref, systemDark);
 
   const toggle = useCallback(() => {
-    setPref(resolved === "dark" ? "light" : "dark");
+    setPref(nextTheme(resolved));
   }, [resolved]);
 
   return { pref, resolved, toggle };

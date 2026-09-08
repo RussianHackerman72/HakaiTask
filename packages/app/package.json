@@ -13,7 +13,8 @@
     "./tasks": "./src/tasks.ts",
     "./chat": "./src/chat.ts",
     "./sync": "./src/sync/index.ts",
-    "./theme": "./src/theme.ts"
+    "./theme": "./src/theme.ts",
+    "./settings": "./src/settings.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

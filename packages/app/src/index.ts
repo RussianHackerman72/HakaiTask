@@ -9,4 +9,5 @@ export * from "./select.js";
 export * from "./theme.js";
 export * from "./user.js";
 export * from "./tasks.js";
+export * from "./settings.js";
 export * from "./time.js";

@@ -30,15 +30,13 @@ import { useIdentity } from "../../src/auth";
 import { headerDate } from "@hakaitask/app/format";
 import { Screen } from "../../src/ui/Screen";
 import { T } from "../../src/ui/T";
-import { useTheme, useThemePref } from "../../src/theme";
+import { useTheme } from "../../src/theme";
 import { Bubble } from "../../src/components/Bubble";
 import { Composer } from "../../src/components/Composer";
-import { Switch } from "../../src/ui/Switch";
 import { Tappable } from "../../src/ui/Pressable";
 
 export default function Chat() {
   const th = useTheme();
-  const { toggle } = useThemePref();
   const router = useRouter();
   const { draft } = useLocalSearchParams<{ draft?: string }>();
   const now = useNow();
@@ -171,7 +169,25 @@ export default function Chat() {
                 <T variant="num" tone="ink70">Masuk</T>
               </Tappable>
             )}
-            <Switch value={th.scheme === "dark"} onChange={toggle} />
+            {/*
+              Dulu di sini sakelar tema dua arah. Diganti jalan ke Setelan
+              karena sakelar itu cuma bisa terang/gelap — sekali dipencet,
+              temanya kepaku dan gak pernah bisa balik ngikut HP lagi.
+              Keadaan ketiganya ("ikut sistem") dari dulu ada di
+              `useThemePref`, cuma gak pernah ada yang bisa milih.
+            */}
+            <Tappable
+              onPress={() => router.push("/settings")}
+              accessibilityLabel="Setelan"
+              style={{
+                backgroundColor: th.c.surface,
+                borderRadius: th.radius.full,
+                paddingHorizontal: 12,
+                minHeight: 32,
+              }}
+            >
+              <T variant="num" tone="ink70">Setelan</T>
+            </Tappable>
           </View>
         </View>
 
