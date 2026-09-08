@@ -29,6 +29,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme";
 import { Tappable } from "../ui/Pressable";
 import { T } from "../ui/T";
@@ -63,6 +64,22 @@ type TabBarProps = {
 
 const TINGGI = 52;
 const PADDING = 4;
+
+/**
+ * Ruang yang harus DISISAIN layar tab di bagian bawahnya.
+ *
+ * Tab bar-nya ngambang di atas isi layar, jadi apa pun yang dipatok di dasar
+ * layar — kolom ketik chat sama chip sarannya, misalnya — bakal ketutup kalau
+ * gak dikasih jarak. Angkanya ditaruh di sini, bukan diketik ulang di tiap
+ * layar, supaya tinggi pil dan jarak yang disisain gak bisa beda.
+ *
+ * Dipakai lewat `useTabBarSpace()` karena butuh inset bawah perangkatnya.
+ */
+export function useTabBarSpace(): number {
+  const th = useTheme();
+  const insets = useSafeAreaInsets();
+  return TINGGI + insets.bottom + th.space[3];
+}
 
 export function FloatingTabBar({ state, descriptors, navigation, insets }: TabBarProps) {
   const th = useTheme();

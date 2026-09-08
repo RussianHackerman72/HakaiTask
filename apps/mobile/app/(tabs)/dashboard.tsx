@@ -18,6 +18,7 @@ import { useTheme } from "../../src/theme";
 import { FocusCard } from "../../src/components/FocusCard";
 import { UpcomingList, buildEntries } from "../../src/components/UpcomingList";
 import { FloatingAdd } from "../../src/components/FloatingAdd";
+import { useTabBarSpace } from "../../src/components/FloatingTabBar";
 import { AddTaskSheet } from "../../src/components/AddTaskSheet";
 
 export default function Dashboard() {
@@ -29,6 +30,7 @@ export default function Dashboard() {
   const focus = useFocus(now);
   const { userId } = useIdentity();
   const [adding, setAdding] = useState(false);
+  const tabSpace = useTabBarSpace();
 
   const entries = useMemo(
     () => buildEntries(focus.upcoming, blocks, now),
@@ -51,7 +53,11 @@ export default function Dashboard() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingVertical: th.space[3], gap: th.space[4] }}>
+      <ScrollView contentContainerStyle={{
+          paddingTop: th.space[3],
+          paddingBottom: tabSpace + th.space[3],
+          gap: th.space[4],
+        }}>
         <T variant="meta" tone="ink40">{headerDate(now)}</T>
 
         {focus.focus ? (

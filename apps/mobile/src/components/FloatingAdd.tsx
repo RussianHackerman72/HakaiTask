@@ -5,29 +5,27 @@
  * digulung panjang, dan tombol yang ikut kegulung ke atas layar itu tombol
  * yang ilang persis pas lagi dibutuhin.
  *
- * Posisinya diangkat di atas tab bar plus safe-area — kalau enggak, di HP
- * bergestur dia duduk pas di garis geser sistem, dan setengah ketukannya
- * kebaca sebagai geser pulang.
+ * Posisinya diangkat di atas tab bar yang juga ngambang, lewat
+ * `useTabBarSpace()` — angka yang sama yang dipakai layar-layar tab buat
+ * nyisain ruang. Dulu di sini ada tebakan `TAB_BAR = 56` sendiri, dan tebakan
+ * yang diketik dua kali itu cuma nunggu waktu buat beda.
  */
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "../theme";
+import { useTabBarSpace } from "./FloatingTabBar";
 import { Tappable } from "../ui/Pressable";
 import { T } from "../ui/T";
 
-/** Tinggi tab bar bawaan expo-router, kira-kira. */
-const TAB_BAR = 56;
-
 export function FloatingAdd({ onPress }: { onPress: () => void }) {
   const th = useTheme();
-  const insets = useSafeAreaInsets();
+  const tabSpace = useTabBarSpace();
 
   return (
     <View
       style={{
         position: "absolute",
         right: th.space[4],
-        bottom: TAB_BAR + insets.bottom + th.space[3],
+        bottom: tabSpace + th.space[3],
       }}
       // Cuma tombolnya yang nangkep sentuhan; sisanya tembus ke daftar di
       // bawahnya, biar area kosong di sekitarnya tetap bisa digulung.

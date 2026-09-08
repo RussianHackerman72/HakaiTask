@@ -33,6 +33,7 @@ import { T } from "../../src/ui/T";
 import { useTheme } from "../../src/theme";
 import { Bubble } from "../../src/components/Bubble";
 import { Composer } from "../../src/components/Composer";
+import { useTabBarSpace } from "../../src/components/FloatingTabBar";
 import { Tappable } from "../../src/ui/Pressable";
 
 export default function Chat() {
@@ -57,6 +58,7 @@ export default function Chat() {
 
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
+  const tabSpace = useTabBarSpace();
 
   // Sapaan pembuka dihitung ulang tiap app dibuka & gak pernah disimpan (§2).
   // Sengaja cuma bergantung ke userName: `now` berdetak tiap menit dan bakal
@@ -207,13 +209,17 @@ export default function Chat() {
           ))}
         </ScrollView>
 
-        <Composer
-          value={value}
-          onChange={setValue}
-          onSubmit={() => send(value)}
-          inputRef={inputRef}
-          {...(messages.length > 0 ? { onClear: clear } : {})}
-        />
+        {/* Tab bar-nya ngambang DI ATAS isi layar — tanpa jarak ini, chip
+            saran paling bawah ketutup pil-nya. */}
+        <View style={{ marginBottom: tabSpace }}>
+          <Composer
+            value={value}
+            onChange={setValue}
+            onSubmit={() => send(value)}
+            inputRef={inputRef}
+            {...(messages.length > 0 ? { onClear: clear } : {})}
+          />
+        </View>
       </KeyboardAvoidingView>
     </Screen>
   );

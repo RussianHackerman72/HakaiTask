@@ -15,6 +15,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useIdentity } from "../../src/auth";
 import { FloatingAdd } from "../../src/components/FloatingAdd";
+import { useTabBarSpace } from "../../src/components/FloatingTabBar";
 import { AddTaskSheet } from "../../src/components/AddTaskSheet";
 import {
   addMonths,
@@ -61,6 +62,7 @@ export default function Calendar() {
   const [selected, setSelected] = useState<Date>(() => new Date(now));
   const { userId } = useIdentity();
   const [adding, setAdding] = useState(false);
+  const tabSpace = useTabBarSpace();
 
   const days = useMemo(
     () => monthMatrix(viewMonth.getFullYear(), viewMonth.getMonth()),
@@ -71,7 +73,11 @@ export default function Calendar() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={{ paddingVertical: th.space[3], gap: th.space[4] }}>
+      <ScrollView contentContainerStyle={{
+          paddingTop: th.space[3],
+          paddingBottom: tabSpace + th.space[3],
+          gap: th.space[4],
+        }}>
         {/*
           Judul bulan dikasih BARIS SENDIRI, bukan rebutan sama tombol navigasi.
           Waktu satu baris, "September 2026" kepotong jadi "September …" di
