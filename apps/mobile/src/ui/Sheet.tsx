@@ -18,8 +18,8 @@
  *      kurang 20px, panelnya kerasa lengket.
  */
 import { useCallback, useEffect, type ReactNode } from "react";
-import { BackHandler, Dimensions, Pressable, View, type ViewStyle } from "react-native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Dimensions, Modal, Pressable, View, type ViewStyle } from "react-native";
+import { Gesture, GestureDetector, GestureHandlerRootView } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -59,17 +59,6 @@ export function Sheet({
     gelap.value = withTiming(open ? 1 : 0, { duration: 200 });
   }, [open, y, gelap, th.spring.standard]);
 
-  // Tombol back nutup panel, bukan ninggalin layar di belakangnya. Tanpa ini
-  // panelnya kebuka lalu layarnya pindah — dan panelnya masih kebuka pas balik.
-  useEffect(() => {
-    if (!open) return;
-    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      onClose();
-      return true;
-    });
-    return () => sub.remove();
-  }, [open, onClose]);
-
   const tutup = useCallback(() => onClose(), [onClose]);
 
   const tarik = Gesture.Pan()
@@ -94,54 +83,100 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <View style={StyleSheetAbsolute} pointerEvents="box-none">
-      <Animated.View style={[StyleSheetAbsolute, { backgroundColor: "#000" }, latar]}>
-        <Pressable
-          style={{ flex: 1 }}
-          onPress={onClose}
-          // Latar gelap itu tombol tutup yang gak kelihatan — pembaca layar
-          // harus tau itu bisa dipencet.
-          accessibilityRole="button"
-          accessibilityLabel="Tutup"
-        />
-      </Animated.View>
+    /**
+     * Lewat `Modal`, bukan View biasa di dalam layarnya.
+     *
+     * Panelnya dulu di-render di dalam layar tab, jadi dia berhenti persis di
+     * atas tab bar: latar gelapnya gak nutup tab bar, dan tab-nya masih bisa
+     * dipencet sementara form-nya kebuka. Panel yang bisa ditinggal lewat
+     * pintu di belakangnya itu bukan panel.
+     *
+     * `Modal` bikin jendela sendiri di atas segalanya, dan `onRequestClose`
+     * sekalian ngurus tombol back — jadi BackHandler manualnya gak perlu.
+     */
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      {/**
+       * `GestureHandlerRootView` LAGI, walau di akar app udah ada.
+       *
+       * `Modal` bikin jendela Android sendiri, dan gesture-handler ngaitin
+       * dirinya per-jendela — akar yang di `_layout.tsx` gak nyampe ke sini.
+       * Tanpa ini gestur tariknya diem total, dan matinya sunyi: gak ada
+       * error, panelnya cuma gak bisa ditarik.
+       */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={StyleSheetAbsolute} pointerEvents="box-none">
+          <Animated.View style={[StyleSheetAbsolute, { backgroundColor: "#000" }, latar]}>
+            <Pressable
+              style={{ flex: 1 }}
+              onPress={onClose}
+              // Latar gelap itu tombol tutup yang gak kelihatan — pembaca layar
+              // harus tau itu bisa dipencet.
+              accessibilityRole="button"
+              accessibilityLabel="Tutup"
+            />
+          </Animated.View>
 
-      <GestureDetector gesture={tarik}>
-        <Animated.View
-          style={[
-            {
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: th.c.paper,
-              borderTopLeftRadius: th.radius.lg,
-              borderTopRightRadius: th.radius.lg,
-              paddingHorizontal: th.space[4],
-              paddingTop: th.space[3],
-              paddingBottom: insets.bottom + th.space[4],
-              maxHeight: LAYAR * 0.9,
-            },
-            panel,
-            style,
-          ]}
-        >
-          {/* Gagang. Gak punya fungsi sendiri — dia cuma ngasih tau panelnya
-              bisa ditarik, dan tanpa itu gestur tariknya jadi rahasia. */}
-          <View
-            style={{
-              alignSelf: "center",
-              width: 36,
-              height: 4,
-              borderRadius: th.radius.full,
-              backgroundColor: th.c.line,
-              marginBottom: th.space[3],
-            }}
-          />
-          {children}
-        </Animated.View>
-      </GestureDetector>
-    </View>
+          <Animated.View
+            style={[
+              {
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: th.c.paper,
+                borderTopLeftRadius: th.radius.lg,
+                borderTopRightRadius: th.radius.lg,
+                paddingHorizontal: th.space[4],
+                paddingTop: th.space[3],
+                paddingBottom: insets.bottom + th.space[4],
+                maxHeight: LAYAR * 0.9,
+              },
+              panel,
+              style,
+            ]}
+          >
+            {/**
+             * Gestur tariknya nempel CUMA di gagang, bukan di seluruh panel.
+             *
+             * Waktu dia masih di seluruh panel, dia nelen gestur gulir punya
+             * ScrollView di dalamnya — form-nya sama sekali gak bisa digulir,
+             * dan tombol Simpan di bawah jadi gak keraih. Ketauan di emulator:
+             * dua tangkapan layar sebelum & sesudah geser ke atas identik.
+             *
+             * Bisa aja dibikin pinter — pan cuma aktif kalau gulirannya lagi di
+             * paling atas DAN arahnya ke bawah — tapi itu nambah dua keadaan
+             * yang cuma bisa dites di perangkat. Gagang itu tempat orang naruh
+             * jempol buat narik panel, dan batasannya jelas tanpa perlu
+             * dijelasin.
+             */}
+            <GestureDetector gesture={tarik}>
+              <View
+                // Area sentuhnya dilebarin jauh di luar garisnya — 4px itu
+                // gagang yang keliatan, bukan gagang yang kepegang.
+                style={{ paddingVertical: 10, marginTop: -10, alignItems: "center" }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 4,
+                    borderRadius: th.radius.full,
+                    backgroundColor: th.c.line,
+                    marginBottom: th.space[3],
+                  }}
+                />
+              </View>
+            </GestureDetector>
+            {children}
+          </Animated.View>
+        </View>
+      </GestureHandlerRootView>
+    </Modal>
   );
 }
 
