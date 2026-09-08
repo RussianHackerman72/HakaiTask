@@ -105,12 +105,21 @@ function Dashboard({
   }, [now, tasks]);
 
   /**
-   * Satu-satunya jalan masuk buat nambah apa pun sekarang: chat.
+   * Di WEB, chat masih satu-satunya jalan masuk.
    *
-   * Kolom ketik di dashboard & kalender dan overlay quick-add dicabut biar
-   * gak ada dua tempat ngetik yang perilakunya beda-beda tipis. Tombol
-   * "tambah" yang masih ada sekarang ngarahin ke sini, bukan buka kolom
-   * sendiri — jadi tetap kelihatan, tanpa jadi input kedua.
+   * Kolom ketik di dashboard & kalender dan overlay quick-add dicabut biar gak
+   * ada dua tempat ngetik yang perilakunya beda-beda tipis. Tombol "tambah"
+   * yang masih ada ngarahin ke sini, bukan buka kolom sendiri.
+   *
+   * CATATAN: di mobile aturan ini udah gak utuh lagi. Sana dapat form nambah
+   * task (`AddTaskSheet`) yang lewat `createTask()`, bukan lewat parser.
+   * Alasannya bukan chat-nya kurang: form itu buat yang mau diatur bukan
+   * kalimat — prioritas, jadwal pengingat — atau pas lagi males nyusun
+   * kalimat. Yang dijaga aturan lama tetap berlaku: gak ada DUA kolom ketik
+   * yang sama-sama ngurai teks. Form-nya isian, bukan kolom ketik kedua.
+   *
+   * Web belum punya form itu. Kalau nanti dibikin, dia mesti mikul aturan yang
+   * sama, dan logikanya numpang `createTask()` yang udah ada di packages/app.
    */
   const goToChat = useCallback((draft = "") => {
     setPage("home");

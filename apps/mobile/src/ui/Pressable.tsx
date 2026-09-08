@@ -19,12 +19,23 @@ export function Tappable({
   style,
   haptic = true,
   disabled,
+  accessibilityRole = "button",
+  accessibilityLabel,
+  hitSlop,
 }: {
   children: ReactNode;
   onPress?: () => void;
   style?: ViewStyle | ViewStyle[];
   haptic?: boolean;
   disabled?: boolean;
+  /**
+   * Diteruskan ke Pressable. Tanpa ini tombol yang isinya cuma ikon atau satu
+   * karakter — tombol "+" ngambang contohnya — kebaca sebagai "+" doang sama
+   * pembaca layar, yang gak ngasih tau apa-apa.
+   */
+  accessibilityRole?: "button" | "link" | "switch";
+  accessibilityLabel?: string;
+  hitSlop?: number;
 }) {
   const th = useTheme();
   const scale = useSharedValue(1);
@@ -33,6 +44,9 @@ export function Tappable({
   return (
     <AnimatedPressable
       disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      {...(accessibilityLabel ? { accessibilityLabel } : {})}
+      {...(hitSlop !== undefined ? { hitSlop } : {})}
       onPressIn={() => {
         scale.value = withSpring(0.97, th.spring.press);
       }}

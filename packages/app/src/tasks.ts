@@ -97,6 +97,58 @@ export function createFromParse(parsed: ParseResult, userId: string): string {
   return id;
 }
 
+/**
+ * Field yang GAK boleh diisi dari luar, walau tipenya ngizinin.
+ *
+ * `actualMin` yang paling penting: dia CACHE, dihitung ulang dari daftar sesi
+ * fokus (`recomputeActualMin`). Diisi tangan sekali aja, angkanya bakal beda
+ * sama sesi yang mendasarinya sampai ada sesi baru yang nimpa — dan sampai
+ * itu kejadian, laporan waktunya bohong tanpa ada yang tau.
+ *
+ * Sisanya punya klien/sinkronisasi: `syncState` gak pernah dikirim ke server,
+ * `rescheduleCount` cuma naik lewat aksi geser jadwal, dan `deletedAt` itu
+ * nisan yang cuma boleh dipasang `removeTask`.
+ */
+const TERLARANG = ["actualMin", "syncState", "rescheduleCount", "deletedAt"] as const;
+
+export type NewTaskInput = Omit<
+  Partial<Task>,
+  "id" | "userId" | (typeof TERLARANG)[number]
+> & { title: string };
+
+/**
+ * Bikin task LANGSUNG, tanpa lewat parser.
+ *
+ * Sampai sekarang satu-satunya jalan bikin task itu `createFromParse`, dan dia
+ * minta `ParseResult` — bentuk yang isinya separuh urusan parser (`matched`,
+ * `unmatched`, `approxTime`, `kind`). Ngarang `ParseResult` palsu cuma buat
+ * lewatin form itu bakal bikin form-nya keliatan kayak hasil parse, dan bikin
+ * tiap perubahan di parser kudu mikirin pemanggil yang bukan parser.
+ *
+ * Ini SENGAJA nyalahin catatan di `apps/web/src/App.tsx` sama
+ * `apps/mobile/app/(tabs)/calendar.tsx` yang bilang chat itu satu-satunya
+ * pintu masuk. Form-nya saudara chat, bukan penggantinya: parser tetap jalur
+ * utama, dan form ini buat momen "males ngetik kalimat".
+ */
+export function createTask(input: NewTaskInput, userId: string): string {
+  const id = newId();
+
+  // Disaring lagi pas jalan, bukan cuma di tipe: `input` sering datang dari
+  // form yang nyebar objek, dan tipe gak nolong kalau ada `as` di jalan.
+  const bersih = { ...input } as Record<string, unknown>;
+  for (const k of TERLARANG) delete bersih[k];
+
+  const task = makeTask({
+    ...(bersih as Partial<Task>),
+    id,
+    userId,
+    title: input.title.trim(),
+  });
+
+  useKaiStore.getState().upsertTask(task);
+  return id;
+}
+
 export function completeTask(task: Task): void {
   useKaiStore.getState().patchTask(task.id, {
     status: "done",

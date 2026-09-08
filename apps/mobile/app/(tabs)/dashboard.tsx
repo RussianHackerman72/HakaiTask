@@ -3,10 +3,11 @@
  *
  * Sengaja TANPA sapaan: sapaan tempatnya di chat. Dashboard itu alat.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useBusyBlocks, useFocus, useTasks } from "@hakaitask/app/tasks";
+import { useIdentity } from "../../src/auth";
 import { useNow } from "@hakaitask/app";
 import { headerDate } from "@hakaitask/app/format";
 import { Screen } from "../../src/ui/Screen";
@@ -16,6 +17,8 @@ import { Pill } from "../../src/ui/Pill";
 import { useTheme } from "../../src/theme";
 import { FocusCard } from "../../src/components/FocusCard";
 import { UpcomingList, buildEntries } from "../../src/components/UpcomingList";
+import { FloatingAdd } from "../../src/components/FloatingAdd";
+import { AddTaskSheet } from "../../src/components/AddTaskSheet";
 
 export default function Dashboard() {
   const th = useTheme();
@@ -24,6 +27,8 @@ export default function Dashboard() {
   const tasks = useTasks();
   const blocks = useBusyBlocks();
   const focus = useFocus(now);
+  const { userId } = useIdentity();
+  const [adding, setAdding] = useState(false);
 
   const entries = useMemo(
     () => buildEntries(focus.upcoming, blocks, now),
@@ -73,6 +78,14 @@ export default function Dashboard() {
           onOpen={(t) => router.push(`/task/${t.id}`)}
         />
       </ScrollView>
+
+      <FloatingAdd onPress={() => setAdding(true)} />
+      <AddTaskSheet
+        open={adding}
+        onClose={() => setAdding(false)}
+        userId={userId}
+        onCreated={(id) => router.push(`/task/${id}`)}
+      />
     </Screen>
   );
 }

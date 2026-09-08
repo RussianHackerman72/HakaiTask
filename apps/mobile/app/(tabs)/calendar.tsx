@@ -1,13 +1,21 @@
 /**
  * Kalender bulanan (§5.1) — grid 6×7 plus agenda hari yang dipilih.
  *
- * Kalender sengaja GAK punya kolom ketik sendiri: semua penambahan lewat chat.
- * Tanggal yang lagi dipilih dititipin sebagai teks awal, jadi user tinggal
- * nulis judulnya dan task-nya mendarat di hari yang bener.
+ * Kalender GAK punya kolom ketik sendiri — dan itu masih berlaku. Yang berubah:
+ * sekarang ada tombol "+" ngambang yang buka form, di samping jalan pintas ke
+ * chat yang udah ada.
+ *
+ * Dua-duanya nitip tanggal yang lagi dipilih, cuma beda cara: yang ke chat
+ * nitip sebagai TEKS AWAL biar parser yang ngurus, yang ke form nitip sebagai
+ * `Date` yang udah keisi. Chat menang kalau kalimatnya udah kebayang; form
+ * menang kalau yang mau diatur bukan kalimat.
  */
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
+import { useIdentity } from "../../src/auth";
+import { FloatingAdd } from "../../src/components/FloatingAdd";
+import { AddTaskSheet } from "../../src/components/AddTaskSheet";
 import {
   addMonths,
   blocksOnDate,
@@ -51,6 +59,8 @@ export default function Calendar() {
     () => new Date(now.getFullYear(), now.getMonth(), 1),
   );
   const [selected, setSelected] = useState<Date>(() => new Date(now));
+  const { userId } = useIdentity();
+  const [adding, setAdding] = useState(false);
 
   const days = useMemo(
     () => monthMatrix(viewMonth.getFullYear(), viewMonth.getMonth()),
@@ -268,6 +278,15 @@ export default function Calendar() {
           </View>
         )}
       </ScrollView>
+
+      <FloatingAdd onPress={() => setAdding(true)} />
+      <AddTaskSheet
+        open={adding}
+        onClose={() => setAdding(false)}
+        userId={userId}
+        prefillDate={selected}
+        onCreated={(id) => router.push("/task/" + id)}
+      />
     </Screen>
   );
 }
