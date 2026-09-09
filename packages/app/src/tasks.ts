@@ -208,6 +208,40 @@ export function patchTask(id: string, patch: Partial<Task>): void {
   useKaiStore.getState().patchTask(id, patch);
 }
 
+/**
+ * Terapin rencana pindah dari papan kanban.
+ *
+ * Rencananya dihitung `planMove()` yang murni; di sini cuma nulisnya. Yang
+ * penting urutannya: nomor ulang (kalau ada) DULUAN, baru kartu yang digeser.
+ * Kebalik, kartunya sempat mendarat di antara angka lama yang sebentar lagi
+ * ditimpa, dan posisinya meleset satu baris.
+ *
+ * `completedAt` ikut diurus di sini karena mindahin kartu ke kolom "Kelar"
+ * itu SAMA artinya sama nyentang task — kalau enggak, task-nya kelar tapi gak
+ * pernah kecatat kapan, dan review mingguan ikut salah.
+ */
+export function applyBoardMove(
+  taskId: string,
+  plan: { status: Task["status"]; order: number; renumber?: { id: string; order: number }[] },
+): void {
+  const store = useKaiStore.getState();
+
+  for (const r of plan.renumber ?? []) store.patchTask(r.id, { order: r.order });
+
+  const sekarang = store.tasks[taskId];
+  const patch: Partial<Task> = { status: plan.status, order: plan.order };
+
+  if (plan.status === "done" && sekarang?.status !== "done") {
+    patch.completedAt = nowIso();
+  } else if (plan.status !== "done" && sekarang?.status === "done") {
+    // Ditarik keluar dari "Kelar" — stempel waktunya ikut dicabut, bukan
+    // ditinggal jadi sisa yang bikin task keliatan pernah selesai.
+    patch.completedAt = undefined;
+  }
+
+  store.patchTask(taskId, patch);
+}
+
 export function subtaskProgress(task: Task): { done: number; total: number } {
   return {
     done: task.subtasks.filter((s) => s.done).length,

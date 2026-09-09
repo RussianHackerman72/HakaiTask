@@ -40,6 +40,9 @@ export function Header({
         <NavTab active={page === "calendar"} onClick={() => onNavigate("calendar")}>
           Kalender
         </NavTab>
+        <NavTab active={page === "kanban"} onClick={() => onNavigate("kanban")}>
+          Papan
+        </NavTab>
       </nav>
 
       <div className="ml-auto flex items-center gap-3">

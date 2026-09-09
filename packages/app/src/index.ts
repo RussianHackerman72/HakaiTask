@@ -10,4 +10,6 @@ export * from "./theme.js";
 export * from "./user.js";
 export * from "./tasks.js";
 export * from "./settings.js";
+export * from "./kanban.js";
+export * from "./upcoming.js";
 export * from "./time.js";

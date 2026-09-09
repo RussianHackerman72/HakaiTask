@@ -10,36 +10,10 @@ import { Tappable } from "../ui/Pressable";
 import { Checkbox, Strike } from "../ui/Checkbox";
 import { SwipeRow } from "./SwipeRow";
 
-export type UpcomingEntry =
-  | { kind: "task"; at?: string; task: Task }
-  | { kind: "busy"; at: string; block: BusyBlock };
-
-/**
- * Gabungin task berikutnya sama blok sibuk, urut waktu. Task tanpa waktu
- * ditaruh paling belakang — dia gak berebut slot jam.
- */
-export function buildEntries(
-  tasks: readonly Task[],
-  blocks: readonly BusyBlock[],
-  now: Date,
-): UpcomingEntry[] {
-  const entries: UpcomingEntry[] = [
-    ...tasks.map<UpcomingEntry>((task) => ({
-      kind: "task",
-      ...(task.dueAt ?? task.startAt ? { at: task.dueAt ?? task.startAt } : {}),
-      task,
-    })),
-    ...blocks
-      .filter((b) => new Date(b.endAt).getTime() >= now.getTime())
-      .map<UpcomingEntry>((block) => ({ kind: "busy", at: block.startAt, block })),
-  ];
-
-  return entries.sort((a, b) => {
-    if (!a.at) return 1;
-    if (!b.at) return -1;
-    return a.at.localeCompare(b.at);
-  });
-}
+// `buildEntries` sama tipenya pindah ke packages/app — dulu dia ada dua
+// kali, sama persis, di berkas ini dan padanannya di platform satunya.
+import type { UpcomingEntry } from "@hakaitask/app/upcoming";
+export { buildEntries, type UpcomingEntry } from "@hakaitask/app/upcoming";
 
 export function UpcomingList({
   entries,

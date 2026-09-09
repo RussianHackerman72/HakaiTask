@@ -1,5 +1,5 @@
 /**
- * Tiga halaman yang sama kayak web: Chat · Dashboard · Kalender.
+ * Empat halaman yang sama kayak web: Chat · Dashboard · Kalender · Papan.
  * Di web ini pil di header; di HP tab bawah — lebih kejangkau jempol.
  *
  * Tab bar-nya ngambang (`FloatingTabBar`), bukan bawaan yang nempel di dasar
@@ -22,6 +22,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: "Chat" }} />
       <Tabs.Screen name="dashboard" options={{ title: "Dashboard" }} />
       <Tabs.Screen name="calendar" options={{ title: "Kalender" }} />
+      <Tabs.Screen name="kanban" options={{ title: "Papan" }} />
     </Tabs>
   );
 }

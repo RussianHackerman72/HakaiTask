@@ -25,6 +25,14 @@ const TO_COLUMN: Record<string, string> = {
   recurrenceParentId: "recurrence_parent_id",
   reminderMin: "reminder_min",
   reminders: "reminders",
+  /**
+   * `order` itu KATA KUNCI di SQL. Sebagai nama kolom dia harus dikutip di
+   * tiap query yang nyentuh dia, dan sekali ada yang lupa ngutip, errornya
+   * muncul jauh dari sini dengan pesan sintaks yang gak nyebut-nyebut kolom.
+   * Di TS namanya tetap `order` karena di sana dia gak nabrak apa-apa —
+   * berkas ini emang ada buat beda kayak gini.
+   */
+  order: "sort_order",
   rescheduleCount: "reschedule_count",
   createdAt: "created_at",
   updatedAt: "updated_at",

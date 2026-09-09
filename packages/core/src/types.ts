@@ -74,6 +74,24 @@ export interface Task {
   reminders?: TaskReminders;
   rescheduleCount: number;
 
+  /**
+   * Urutan manual di dalam satu kolom kanban. PECAHAN, bukan indeks.
+   *
+   * Kalau ini indeks bulat, mindahin satu kartu ke tengah berarti nomorin
+   * ulang semua kartu di bawahnya — dan tiap baris yang dinomorin ulang itu
+   * satu tulisan ke server. Sinkronisasi di sini LWW per field, jadi dua HP
+   * yang nomorin ulang kolom yang sama bakal saling nimpa dan urutannya jadi
+   * acak di dua-duanya.
+   *
+   * Dengan pecahan, mindahin satu kartu = SATU baris yang berubah: nilainya
+   * diambil di tengah-tengah dua tetangganya. Kartu yang gak disentuh gak
+   * ikut ditulis, jadi gak ada yang bisa bentrok.
+   *
+   * Kosong = belum pernah diurutin tangan; diurutin pakai aturan bawaan
+   * (prioritas, lalu tenggat).
+   */
+  order?: number;
+
   // struktur
   subtasks: Subtask[];
   blockedBy?: string[];

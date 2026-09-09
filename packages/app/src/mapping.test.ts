@@ -43,6 +43,24 @@ describe("mapping task", () => {
     );
   });
 
+  /**
+   * `order` di TS ↔ `sort_order` di DB. Namanya sengaja beda karena `order`
+   * itu kata kunci SQL — dan justru karena beda, dia gampang putus tanpa
+   * ketahuan: build tetap lolos, urutan papannya aja yang diem-diem gak ikut
+   * kesinkron.
+   */
+  it("order ↔ sort_order bolak-balik", () => {
+    const row = toRow(task({ order: 1536 }));
+    expect(row.sort_order).toBe(1536);
+    expect(row).not.toHaveProperty("order");
+    expect(fromRow({ id: "t1", user_id: "u1", title: "x", ...row }).order).toBe(1536);
+  });
+
+  it("order kosong artinya belum diurutin tangan, bukan nol", () => {
+    const t = fromRow({ id: "t1", user_id: "u1", title: "x", sort_order: null });
+    expect(t.order).toBeUndefined();
+  });
+
   it("reminderMin lama tetap kebaca — baris lama gak perlu dimigrasi", () => {
     const t = fromRow({ id: "t1", user_id: "u1", title: "x", reminder_min: 30 });
     expect(t.reminderMin).toBe(30);

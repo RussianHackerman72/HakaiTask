@@ -6,6 +6,7 @@ import { SignIn, useAuth } from "./components/AuthGate.js";
 import { CalendarView } from "./components/CalendarView.js";
 import { ChatView } from "./components/ChatView.js";
 import { CommandPalette, type Command } from "./components/CommandPalette.js";
+import { KanbanView } from "./components/KanbanView.js";
 import { DetailSheet } from "./components/DetailSheet.js";
 import { EmptyState } from "./components/EmptyState.js";
 import { FocusCard } from "./components/FocusCard.js";
@@ -151,7 +152,7 @@ function Dashboard({
   const commands = useMemo<Command[]>(
     () => [
       { id: "add", label: "Tambah task", hint: "n", run: () => goToChat("tambahin ") },
-      // Sejak halaman jadi tiga, tombol "ganti halaman" yang cuma bolak-balik
+      // Sejak halaman jadi empat, tombol "ganti halaman" yang cuma bolak-balik
       // udah gak cukup — tiap tujuan dikasih perintahnya sendiri.
       ...(page !== "home" ? [{ id: "nav-home", label: "Buka chat", run: () => setPage("home") }] : []),
       ...(page !== "dashboard"
@@ -159,6 +160,9 @@ function Dashboard({
         : []),
       ...(page !== "calendar"
         ? [{ id: "nav-cal", label: "Buka kalender", run: () => setPage("calendar") }]
+        : []),
+      ...(page !== "kanban"
+        ? [{ id: "nav-board", label: "Buka papan", run: () => setPage("kanban") }]
         : []),
       { id: "theme", label: "Ganti mode terang/gelap", run: toggleTheme },
       ...(onSignOut ? [{ id: "signout", label: "Keluar", run: onSignOut }] : []),
@@ -242,13 +246,21 @@ function Dashboard({
                 />
               </div>
             </motion.div>
-          ) : (
+          ) : page === "calendar" ? (
             <motion.div key="calendar" {...PAGE_ANIM} className="mt-10">
               <CalendarView
                 now={now}
                 tasks={tasks}
                 blocks={blocks}
                 onAdd={goToChat}
+                onOpenTask={(task) => setOpenTaskId(task.id)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="kanban" {...PAGE_ANIM} className="mt-10">
+              <KanbanView
+                tasks={tasks}
+                now={now}
                 onOpenTask={(task) => setOpenTaskId(task.id)}
               />
             </motion.div>
