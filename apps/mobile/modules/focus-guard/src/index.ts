@@ -81,6 +81,16 @@ declare class FocusGuardModuleType extends NativeModule<Events> {
    */
   openAppDetailsSettings(): void;
 
+  // ── alarm presisi (punya notifikasi, numpang di modul ini) ───────────────
+  /**
+   * False artinya pengingat boleh ditunda Doze — TELAT, bukan hilang.
+   * Cuma bisa false di Android 12/12L; dari 13 ke atas USE_EXACT_ALARM
+   * ngunci ini true.
+   */
+  canScheduleExactAlarms(): boolean;
+  /** Cuma berarti di API 31/32; di atas itu gak ada saklarnya. */
+  openExactAlarmSettings(): void;
+
   // ── daftar app buat pemilih blocklist ────────────────────────────────────
   /** App yang punya launcher icon doang — sisanya cuma bikin daftar panjang. */
   listInstalledApps(): InstalledApp[];

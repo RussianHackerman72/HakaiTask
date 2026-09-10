@@ -1,9 +1,11 @@
 package expo.modules.focusguard
 
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
 import expo.modules.kotlin.modules.Module
@@ -109,6 +111,47 @@ class FocusGuardModule : Module() {
 
     Function("openDndSettings") {
       openSettings(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+    }
+
+    // ── alarm presisi ────────────────────────────────────────────────────────
+
+    /**
+     * Beda sama izin lain di berkas ini: yang ini bukan buat penjaga fokus,
+     * tapi buat pengingat. Numpang di modul ini karena expo-notifications gak
+     * ngebuka canScheduleExactAlarms() ke JS sama sekali, dan bikin modul native
+     * baru cuma buat satu panggilan ongkosnya lebih mahal daripada nebeng.
+     *
+     * False artinya pengingat TELAT, bukan hilang — expo-notifications turun ke
+     * alarm non-presisi tanpa bilang apa-apa. Gagal diam-diam kayak gitu yang
+     * bikin ini pantes dilaporin ke layar setelan.
+     *
+     * Di Android 13+ selalu true: USE_EXACT_ALARM gak bisa dicabut. Yang bisa
+     * false cuma 12/12L, dan itu pun setelah user nyabut sendiri — lihat
+     * catatan SCHEDULE_EXACT_ALARM di AndroidManifest.xml.
+     */
+    Function("canScheduleExactAlarms") {
+      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        true
+      } else {
+        val am = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        am.canScheduleExactAlarms()
+      }
+    }
+
+    /**
+     * Halaman "Alarm & pengingat". Cuma ada gunanya di API 31/32, karena cuma
+     * di situ app kita kedaftar di sana — dari 33 ke atas USE_EXACT_ALARM gak
+     * muncul sebagai saklar yang bisa dimatiin.
+     */
+    Function("openExactAlarmSettings") {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        context.startActivity(
+          Intent(
+            Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+            Uri.fromParts("package", context.packageName, null),
+          ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
+      }
     }
 
     // ── daftar app ──────────────────────────────────────────────────────────

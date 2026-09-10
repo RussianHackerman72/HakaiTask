@@ -22,6 +22,33 @@
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
   <!--
+    SCHEDULE_EXACT_ALARM, dipotong di API 32.
+
+    Kenapa di sini dan bukan di app.json: `android.permissions` di app.json cuma
+    nerima nama izin, gak ada tempat buat maxSdkVersion. Ini satu-satunya
+    manifest yang kita tulis sendiri dan ikut kegabung waktu build. Izinnya
+    sendiri urusan notifikasi, bukan urusan penjaga fokus — ditaruh di berkas
+    ini karena kepaksa, bukan karena tempatnya.
+
+    Kenapa perlu: dari Android 13 kita pegang USE_EXACT_ALARM, dikasih waktu
+    pasang dan GAK bisa dicabut user. Tapi izin itu baru ada di API 33. Di
+    Android 12/12L dia gak dikenal, dan yang tersisa cuma SCHEDULE_EXACT_ALARM —
+    tanpa dia canScheduleExactAlarms() balik false, lalu expo-notifications
+    diam-diam pindah ke setAndAllowWhileIdle (ExpoSchedulingDelegate.setupAlarm).
+    Alarmnya tetap kepasang, gak ada error, gak ada yang gagal: cuma boleh
+    ditunda Doze belasan menit. Itu persis keluhan "pengingat gak selalu
+    muncul", di pita versi yang gak pernah kita tes.
+
+    Kenapa dipotong 32: di Android 13+ SCHEDULE_EXACT_ALARM bisa dicabut user.
+    Kalau dibawa ke atas, dia malah NAMBAH satu jalan gagal di versi yang
+    sekarang justru udah aman. maxSdkVersion bikin dia berhenti persis di batas
+    USE_EXACT_ALARM mulai jalan — dua izin, gak pernah barengan.
+  -->
+  <uses-permission
+    android:name="android.permission.SCHEDULE_EXACT_ALARM"
+    android:maxSdkVersion="32" />
+
+  <!--
     Buat daftar app yang bisa diblokir kita cuma butuh app yang PUNYA ikon di
     launcher — persis yang dibalikin queryIntentActivities di listInstalledApps().
     <queries> ngasih jendela sempit itu tanpa izin apa pun.
