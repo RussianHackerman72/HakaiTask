@@ -742,7 +742,12 @@ npx eas-cli build --platform android --profile preview
 ```
 
 **Bisa lewat update:** apa pun yang JS/TS. Layar, komponen, `packages/core`,
-`packages/app`, aturan penjadwalan notifikasi, teks, gaya, aset.
+`packages/app`, aturan penjadwalan notifikasi, teks, gaya, dan aset yang
+di-`import` dari JS.
+
+⚠️ "Aset" di situ **bukan** ikon app. `icon`, `adaptiveIcon`, sama ikon
+notifikasi dibaca waktu prebuild dan dipanggang ke dalam APK — ganti berkasnya
+doang terus `eas update` gak ngubah apa-apa di HP, dan gagalnya diem.
 
 **HARUS build ulang:**
 
@@ -752,12 +757,13 @@ npx eas-cli build --platform android --profile preview
 | dependensi native baru | modulnya harus ikut dikompilasi |
 | `android.permissions` di `app.json` | masuk ke AndroidManifest pas build |
 | daftar `plugins` di `app.json` | config plugin jalan pas prebuild |
+| `icon` / `adaptiveIcon` / ikon notifikasi | dipanggang ke APK pas prebuild |
 | `version` di `app.json` | lihat jebakan di bawah |
 
 **Tiga hal yang gampang bikin salah paham:**
 
 1. `runtimeVersion` pakai `{policy: "appVersion"}`, jadi nilainya ngikut
-   `version` — sekarang `0.1.0`. Naikin `version` berarti SEMUA app yang udah
+   `version` — sekarang `0.3.0`. Naikin `version` berarti SEMUA app yang udah
    kepasang berhenti nerima update sampai orangnya pasang APK baru. Jadi
    naikin versi itu keputusan rilis, bukan kerapian.
 2. `fallbackToCacheTimeout: 0` bikin app selalu buka pakai bundel yang udah
@@ -877,8 +883,21 @@ Sekarang yang dikirim snapshot penuh.
 Tabelnya sudah ada di database sejak awal, lengkap dengan RLS — tapi tidak ada
 satu baris pun kode klien yang menyentuhnya.
 
+**Di Android 12, semua pengingat boleh telat — dan tidak ada yang memberi tahu.**
+`USE_EXACT_ALARM` sudah didaftarkan, jadi alarm presisi dianggap beres. Tapi
+izin itu baru ada sejak Android 13. Di 12/12L ia tidak dikenal, dan karena
+`SCHEDULE_EXACT_ALARM` tidak pernah ikut didaftarkan, expo-notifications
+diam-diam pindah ke alarm non-presisi: jadwal tetap terpasang, tidak ada error,
+tidak ada yang gagal — hanya boleh ditunda Doze. Ketahuan waktu membaca ulang
+kode Expo-nya, bukan dari laporan, karena tidak ada perangkat Android 12 yang
+pernah dipakai menguji.
+
 > **Aturan yang lahir:** fitur yang "sudah direncanakan" tidak sama dengan
 > fitur yang jalan. Yang menentukan bukan skemanya, tapi kodenya.
+>
+> Dan izin yang jalan di HP kamu belum tentu ada di HP orang lain. Yang
+> menentukan bukan satu perangkat yang kebetulan dites, tapi rentang versi
+> yang beneran didukung.
 
 </details>
 
