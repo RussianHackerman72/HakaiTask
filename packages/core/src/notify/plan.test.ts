@@ -14,8 +14,21 @@ const HOUR = 3_600_000;
 
 const settings: UserSettings = { ...DEFAULT_SETTINGS, userId: "u1" };
 
+/**
+ * `updatedAt` ikut jam BEKU tesnya, bukan `Date.now()` asli.
+ *
+ * Bukan kerapian: pengingat yang jendela lead-nya udah lewat dijangkar ke
+ * `updatedAt`, jadi task yang "diubah" di hari asli bikin tesnya ngukur
+ * jarak antara dua jam yang beda dunia.
+ */
 function task(over: Partial<Task> = {}): Task {
-  return makeTask({ id: "t1", userId: "u1", title: "Revisi vlog", ...over });
+  return makeTask({
+    id: "t1",
+    userId: "u1",
+    title: "Revisi vlog",
+    updatedAt: NOW.toISOString(),
+    ...over,
+  });
 }
 
 function plan(tasks: Task[], over: Partial<UserSettings> = {}, now = NOW) {
@@ -132,6 +145,38 @@ describe("pengingat tenggat", () => {
     // Dimajuin ke sekarang — tapi jangan bunyi di detik yang sama.
     expect(at).toBeGreaterThan(NOW.getTime());
     expect(at).toBeLessThan(NOW.getTime() + 5 * 60_000);
+  });
+
+  /**
+   * Badai notifikasi: 24 notifikasi dalam setengah jam, dari SATU task.
+   *
+   * Yang dites bukan satu putaran, tapi DUA. Notifikasi yang udah bunyi ilang
+   * dari daftar terjadwal, jadi rekonsiliasi berikutnya lihat kuncinya kosong
+   * lagi — dan dulu dia ngitung `now + 1 menit` yang baru terus masang ulang,
+   * begitu terus sampai tenggatnya lewat.
+   *
+   * Tes lama gak mungkin nangkep ini: semuanya beku di satu `now`, sedangkan
+   * bug-nya cuma ada di URUTAN, bukan di potretnya. Itu sebabnya tes ini maju
+   * jam, bukan nambah kasus.
+   */
+  it("pengingat telat dipasang SEKALI, gak diulang tiap rekonsiliasi", () => {
+    const t = task({ dueAt: new Date(NOW.getTime() + 30 * 60_000).toISOString() });
+    expect(plan([t]).filter((n) => n.kind === "due")).toHaveLength(1);
+
+    // Ronde kedua, sesudah pengingatnya mestinya udah bunyi.
+    const nanti = new Date(NOW.getTime() + 5 * 60_000);
+    expect(plan([t], {}, nanti).filter((n) => n.kind === "due")).toHaveLength(0);
+  });
+
+  it("task yang diubah lagi dapat satu pengingat baru, bukan nol", () => {
+    // Jangkarnya `updatedAt`, jadi ngedit task itu alasan sah buat diingetin
+    // sekali lagi — sekali, bukan tiap ronde.
+    const nanti = new Date(NOW.getTime() + 5 * 60_000);
+    const t = task({
+      dueAt: new Date(NOW.getTime() + 30 * 60_000).toISOString(),
+      updatedAt: nanti.toISOString(),
+    });
+    expect(plan([t], {}, nanti).filter((n) => n.kind === "due")).toHaveLength(1);
   });
 
   it("lead-nya lewat DAN tenggatnya lewat → tetap gak dijadwalin", () => {

@@ -75,10 +75,37 @@ const PADDING = 4;
  *
  * Dipakai lewat `useTabBarSpace()` karena butuh inset bawah perangkatnya.
  */
+/**
+ * Papan ketik lagi naik?
+ *
+ * Dipisah jadi hook karena DUA hal butuh jawabannya: pil-nya (buat ngumpet)
+ * dan `useTabBarSpace()` (buat ngelepas jarak yang disisain). Dulu cuma
+ * pil-nya yang tau, dan jaraknya angka mati — jadi pas papan ketik naik
+ * pil-nya ilang tapi jaraknya tetep nongkrong, nyisain lubang kosong setinggi
+ * tab bar persis di atas kolom ketik. Dua fitur yang masing-masing bener, yang
+ * gak saling ngasih tau.
+ */
+export function useKeyboardUp(): boolean {
+  const [ketik, setKetik] = useState(false);
+  useEffect(() => {
+    const naik = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const turun = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const a = Keyboard.addListener(naik, () => setKetik(true));
+    const b = Keyboard.addListener(turun, () => setKetik(false));
+    return () => {
+      a.remove();
+      b.remove();
+    };
+  }, []);
+  return ketik;
+}
+
 export function useTabBarSpace(): number {
   const th = useTheme();
   const insets = useSafeAreaInsets();
-  return TINGGI + insets.bottom + th.space[3];
+  // Pil-nya dilepas total pas papan ketik naik, jadi gak ada yang perlu
+  // dihindarin — jaraknya ikut nol.
+  return useKeyboardUp() ? 0 : TINGGI + insets.bottom + th.space[3];
 }
 
 export function FloatingTabBar({ state, descriptors, navigation, insets }: TabBarProps) {
@@ -93,21 +120,7 @@ export function FloatingTabBar({ state, descriptors, navigation, insets }: TabBa
     if (lebarTab > 0) x.value = withSpring(state.index * lebarTab, th.spring.standard);
   }, [state.index, lebarTab, x, th.spring.standard]);
 
-  /**
-   * Papan ketik. Android bunyi `keyboardDidShow`; iOS `keyboardWillShow` biar
-   * ngumpetnya barengan sama papan ketiknya naik, bukan sesudahnya.
-   */
-  const [ketik, setKetik] = useState(false);
-  useEffect(() => {
-    const naik = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const turun = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const a = Keyboard.addListener(naik, () => setKetik(true));
-    const b = Keyboard.addListener(turun, () => setKetik(false));
-    return () => {
-      a.remove();
-      b.remove();
-    };
-  }, []);
+  const ketik = useKeyboardUp();
 
   const muncul = useSharedValue(1);
   useEffect(() => {

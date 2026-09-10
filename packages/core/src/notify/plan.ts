@@ -243,8 +243,30 @@ export function planNotifications(input: PlanInput): PlannedNotification[] {
      */
     const nearest = new Date(due.getTime() - leads[0]! * MIN);
     if (ticks.length === 0 && nearest.getTime() <= now.getTime()) {
-      const at = new Date(now.getTime() + SOON);
-      if (at.getTime() < due.getTime() && !inQuietHours(at, quiet)) {
+      /**
+       * Dijangkar ke `updatedAt`, BUKAN ke `now`. Ini yang bikin badai.
+       *
+       * Kuncinya (`due:<id>:<lead>`) emang tetap, tapi notifikasi yang UDAH
+       * BUNYI ilang dari daftar terjadwal. Jadi rekonsiliasi berikutnya lihat
+       * kuncinya kosong, ngitung `now + SOON` yang BARU, dan masang lagi.
+       * Terus begitu tiap kali app kebuka atau task kesentuh, sampai
+       * tenggatnya lewat — 24 notifikasi dalam setengah jam, dari satu task.
+       * `capPerDay` gak nolong: dia cuma ngatur brief, overdue, sama review;
+       * `due` gak pernah kena batas.
+       *
+       * Jangkar ke `updatedAt` bikin jamnya TETAP: sekali bunyi, hitungan
+       * yang sama udah lewat, jadi ronde berikutnya gak masang apa-apa lagi.
+       * Artinya juga lebih pas — "baru kamu tulis, dan jam pengingatnya udah
+       * kelewat, jadi diingetin sesaat setelah kamu nulis", bukan "diingetin
+       * sesaat setelah app-nya dibuka".
+       */
+      const jangkar = new Date(t.updatedAt).getTime();
+      const at = new Date((Number.isFinite(jangkar) ? jangkar : now.getTime()) + SOON);
+      if (
+        at.getTime() > now.getTime() &&
+        at.getTime() < due.getTime() &&
+        !inQuietHours(at, quiet)
+      ) {
         ticks.push({ lead: leads[0]!, at });
       }
     }

@@ -22,6 +22,29 @@ function day(d: Date | undefined): string {
   return at(d).slice(0, 10);
 }
 
+describe("daypart vs jam yang ditulis", () => {
+  /**
+   * "makan malem jam 20.30" dulu jadi 20:00, judulnya "Makan untuk jam 20.30".
+   * Daypart-nya ketemu duluan, masang jam sore bawaan, lalu keluar dari fungsi
+   * jamnya — jadi angka yang user ketik sendiri gak pernah kebaca dan malah
+   * nyangkut di judul. Tebakan gak boleh nimpa maksud.
+   */
+  it("jam eksplisit menang, daypart-nya tetep dimakan dari judul", () => {
+    const r = p("tambah makan malem jam 20.30");
+    expect(at(r.dueAt)).toBe("2026-08-07 20:30");
+    expect(r.title).toBe("Makan");
+  });
+
+  it("titik sebagai pemisah menit tetap jalan tanpa daypart", () => {
+    expect(at(p("tambah makan jam 20.30").dueAt)).toBe("2026-08-07 20:30");
+  });
+
+  it("daypart sendirian tetap nyetel jam bawaannya", () => {
+    // Batas fix di atas: tanpa jam yang ditulis, daypart masih yang mutusin.
+    expect(at(p("tambah makan malem").dueAt)).toBe("2026-08-07 20:00");
+  });
+});
+
 describe("dasar", () => {
   it("judul saja, tanpa tanggal", () => {
     const r = p("beli kopi");

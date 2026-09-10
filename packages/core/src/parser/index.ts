@@ -721,6 +721,20 @@ function readClock(tokens: Token[], i: number): ClockRead | null {
   return null;
 }
 
+/**
+ * Ada jam yang DITULIS user di sisa kalimat? Dipakai buat mastiin daypart
+ * ("malem", "pagi") gak nimpa angka yang diketik sendiri.
+ */
+function adaJamEksplisit(tokens: Token[], from: number): boolean {
+  for (let i = from; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (!t || t.consumed || t.locked) continue;
+    if (parseClockString(t.norm)) return true;
+    if ((t.norm === "jam" || t.norm === "pukul") && readClock(tokens, i + 1)) return true;
+  }
+  return false;
+}
+
 function applyTime(tokens: Token[], result: ParseResult, now: Date, dateAnchor: Date | null): void {
   const base = dateAnchor ?? startOfDay(now);
   const dayparts = lex.daypart as Record<string, string>;
@@ -830,6 +844,23 @@ function applyTime(tokens: Token[], result: ParseResult, now: Date, dateAnchor: 
     // daypart berdiri sendiri: "besok pagi"
     const dp = findPhrase(tokens, i, daypartKeys);
     if (dp) {
+      /**
+       * Jam yang ditulis user selalu menang atas daypart.
+       *
+       * "makan malem jam 20.30" dulu jadi 20:00: cabang ini ketemu "malem"
+       * duluan, masang jam sore bawaan, lalu `return` — keluar dari fungsi
+       * ini sama sekali. Jadi "jam 20.30" yang nyusul gak pernah kebaca, dan
+       * malah nyangkut di judul jadi "Makan untuk jam 20.30".
+       *
+       * Daypart itu TEBAKAN; angka yang diketik itu MAKSUD. Tebakan gak boleh
+       * nimpa maksud. Kata daypart-nya tetep dimakan biar gak nyangkut di
+       * judul, cuma gak dipakai buat nyetel jam.
+       */
+      if (adaJamEksplisit(tokens, i + dp.len)) {
+        consume(tokens, i, dp.len, "time");
+        i += dp.len - 1;
+        continue;
+      }
       const hm = parseClockString(dayparts[dp.phrase]!);
       if (hm) {
         applyClock(result, base, hm, approxFlag);
