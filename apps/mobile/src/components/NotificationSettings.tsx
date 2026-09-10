@@ -32,14 +32,51 @@ const SELESAI_TENANG = ["05:00", "06:00", "07:00", "08:00"];
  * Go). Sengaja dibedain dari false: "gak tau" bukan "mati", dan kartunya cuma
  * boleh nongol kalau kita beneran tau dia mati.
  */
-function bacaAlarmPresisi(): boolean | null {
+function cek(f: () => boolean, nama: string): boolean | null {
   if (Platform.OS !== "android") return null;
   try {
-    return FocusGuard.canScheduleExactAlarms();
+    return f();
   } catch (e) {
-    if (__DEV__) console.warn("[notif] cek alarm presisi gagal:", e);
+    if (__DEV__) console.warn(`[notif] cek ${nama} gagal:`, e);
     return null;
   }
+}
+
+/**
+ * Dua-duanya cerita yang sama: pengingatnya TELAT, bukan hilang, dan Android
+ * gak akan pernah ngasih tau. Cuma nongol kalau keadaannya beneran jelek —
+ * kartu yang selalu bilang "aktif" cuma manjangin layar tanpa nambah kabar.
+ */
+function KartuTelat({
+  judul,
+  isi,
+  onBuka,
+}: {
+  judul: string;
+  isi: string;
+  onBuka: () => void;
+}) {
+  const th = useTheme();
+  return (
+    <Card style={{ gap: 8 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: th.space[2] }}>
+        <T variant="h2" style={{ fontSize: 15, flex: 1 }}>
+          {judul}
+        </T>
+        <T variant="num" tone="accent">
+          mati
+        </T>
+      </View>
+      <T variant="bodySm" tone="ink70">
+        {isi}
+      </T>
+      <Tappable onPress={onBuka} style={{ alignSelf: "flex-start", paddingHorizontal: 0 }}>
+        <T variant="num" style={{ color: th.c.ink }}>
+          Buka setelan →
+        </T>
+      </Tappable>
+    </Card>
+  );
 }
 
 function label(m: number): string {
@@ -56,6 +93,7 @@ export function NotificationSettings({
   const th = useTheme();
   const [granted, setGranted] = useState<boolean | null>(null);
   const [exact, setExact] = useState<boolean | null>(null);
+  const [doze, setDoze] = useState<boolean | null>(null);
 
   /**
    * Dicek ulang tiap app balik ke depan. Izin notifikasi bisa dimatiin dari
@@ -64,7 +102,8 @@ export function NotificationSettings({
    */
   const refresh = useCallback(() => {
     void hasNotificationPermission().then(setGranted);
-    setExact(bacaAlarmPresisi());
+    setExact(cek(() => FocusGuard.canScheduleExactAlarms(), "alarm presisi"));
+    setDoze(cek(() => FocusGuard.isIgnoringBatteryOptimizations(), "doze"));
   }, []);
 
   useEffect(() => {
@@ -105,40 +144,32 @@ export function NotificationSettings({
         )}
       </Card>
 
-      {/*
-        Cuma muncul kalau alarm presisi BENERAN mati. Di Android 13+ itu gak
-        pernah kejadian — USE_EXACT_ALARM gak bisa dicabut — jadi kartu yang
-        selalu bilang "aktif" cuma manjangin layar tanpa nambah satu kabar pun.
-      */}
       {exact === false && (
-        <Card style={{ gap: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: th.space[2] }}>
-            <T variant="h2" style={{ fontSize: 15, flex: 1 }}>
-              Alarm presisi
-            </T>
-            <T variant="num" tone="accent">
-              mati
-            </T>
-          </View>
-          <T variant="bodySm" tone="ink70">
-            Pengingat tetap dijadwalin, tapi Android boleh nunda sampai belasan
-            menit buat hemat baterai. Jadinya telat, bukan hilang.
-          </T>
-          <Tappable
-            onPress={() => {
-              try {
-                FocusGuard.openExactAlarmSettings();
-              } catch (e) {
-                if (__DEV__) console.warn("[notif] buka setelan alarm gagal:", e);
-              }
-            }}
-            style={{ alignSelf: "flex-start", paddingHorizontal: 0 }}
-          >
-            <T variant="num" style={{ color: th.c.ink }}>
-              Buka setelan →
-            </T>
-          </Tappable>
-        </Card>
+        <KartuTelat
+          judul="Alarm presisi"
+          isi="Pengingat tetap dijadwalin, tapi Android boleh nunda sampai belasan menit buat hemat baterai. Jadinya telat, bukan hilang."
+          onBuka={() => {
+            try {
+              FocusGuard.openExactAlarmSettings();
+            } catch (e) {
+              if (__DEV__) console.warn("[notif] buka setelan alarm gagal:", e);
+            }
+          }}
+        />
+      )}
+
+      {doze === false && (
+        <KartuTelat
+          judul="Hemat baterai"
+          isi="HaKaiTask masih kena penghemat baterai. Kalau HP nganggur lama, pengingat bisa telat sampai HP dipakai lagi. Cari HaKaiTask di daftar, pilih “Jangan optimalkan”."
+          onBuka={() => {
+            try {
+              FocusGuard.openBatterySettings();
+            } catch (e) {
+              if (__DEV__) console.warn("[notif] buka setelan baterai gagal:", e);
+            }
+          }}
+        />
       )}
 
       <Field

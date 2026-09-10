@@ -91,6 +91,11 @@ declare class FocusGuardModuleType extends NativeModule<Events> {
   /** Cuma berarti di API 31/32; di atas itu gak ada saklarnya. */
   openExactAlarmSettings(): void;
 
+  /** False artinya Doze boleh nunda alarm pas HP nganggur — telat, bukan hilang. */
+  isIgnoringBatteryOptimizations(): boolean;
+  /** Daftar sistem, bukan dialog sekali-ketuk: yang itu butuh izin sensitif. */
+  openBatterySettings(): void;
+
   // ── daftar app buat pemilih blocklist ────────────────────────────────────
   /** App yang punya launcher icon doang — sisanya cuma bikin daftar panjang. */
   listInstalledApps(): InstalledApp[];

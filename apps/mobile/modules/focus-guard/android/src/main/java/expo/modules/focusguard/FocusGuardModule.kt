@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import android.text.TextUtils
 import expo.modules.kotlin.modules.Module
@@ -143,6 +144,28 @@ class FocusGuardModule : Module() {
      * di situ app kita kedaftar di sana — dari 33 ke atas USE_EXACT_ALARM gak
      * muncul sebagai saklar yang bisa dimatiin.
      */
+    /**
+     * Doze. Kalau app-nya gak dikecualiin, Android boleh nunda alarm sama kerja
+     * latar pas HP nganggur lama. Jalannya beda dari alarm presisi, gejalanya
+     * sama persis: pengingat telat tanpa satu pun error.
+     */
+    Function("isIgnoringBatteryOptimizations") {
+      val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+      pm.isIgnoringBatteryOptimizations(context.packageName)
+    }
+
+    /**
+     * Sengaja BUKAN ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS. Dialog
+     * sekali-ketuk itu nuntut izin REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, dan
+     * izin itu termasuk yang paling gampang bikin Play Protect curiga — persis
+     * ongkos yang dulu bikin QUERY_ALL_PACKAGES sama PACKAGE_USAGE_STATS
+     * dibuang dari sini. Daftar sistem gak butuh izin apa-apa; user yang milih
+     * app-nya sendiri. Satu ketukan lebih panjang, nol izin baru.
+     */
+    Function("openBatterySettings") {
+      openSettings(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+    }
+
     Function("openExactAlarmSettings") {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         context.startActivity(
