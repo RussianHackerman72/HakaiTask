@@ -51,10 +51,13 @@ function KartuTelat({
   judul,
   isi,
   onBuka,
+  tanda = "mati",
 }: {
   judul: string;
   isi: string;
   onBuka: () => void;
+  /** "mati" buat yang kebaca; "gak kebaca" buat yang emang gak ada API-nya. */
+  tanda?: string;
 }) {
   const th = useTheme();
   return (
@@ -64,7 +67,7 @@ function KartuTelat({
           {judul}
         </T>
         <T variant="num" tone="accent">
-          mati
+          {tanda}
         </T>
       </View>
       <T variant="bodySm" tone="ink70">
@@ -77,6 +80,28 @@ function KartuTelat({
       </Tappable>
     </Card>
   );
+}
+
+/**
+ * One UI naruh penghemat sendiri DI ATAS Doze: "Aplikasi tidur" sama "Aplikasi
+ * tidur lelap". App bisa udah lolos dari penghemat baterai bawaan —
+ * isIgnoringBatteryOptimizations() balik true, kartu Doze-nya sembunyi — tapi
+ * tetep ditidurin One UI, dan alarmnya ikut mati.
+ *
+ * Gak ada API buat ngebaca keadaan itu. Jadi satu-satunya jawaban yang jujur
+ * bukan nebak, tapi ngaku: bilang kita gak bisa ngecek, terus kasih jalannya.
+ * Pola yang sama kayak resep "Restricted settings" di layar penjaga fokus.
+ *
+ * Dites lewat Platform.constants, bukan modul native, biar tetep bisa dikirim
+ * lewat eas update tanpa build.
+ */
+function samsung(): boolean {
+  if (Platform.OS !== "android") return false;
+  try {
+    return /samsung/i.test(String(Platform.constants.Manufacturer ?? ""));
+  } catch {
+    return false;
+  }
 }
 
 function label(m: number): string {
@@ -167,6 +192,21 @@ export function NotificationSettings({
               FocusGuard.openBatterySettings();
             } catch (e) {
               if (__DEV__) console.warn("[notif] buka setelan baterai gagal:", e);
+            }
+          }}
+        />
+      )}
+
+      {samsung() && (
+        <KartuTelat
+          tanda="gak kebaca"
+          judul="Tidur paksa Samsung"
+          isi="One UI punya penghemat sendiri di atas bawaan Android, dan dari sini gak bisa dicek — walau semua di atas udah hijau. Kalau pengingat masih telat: Setelan → Baterai → Batas penggunaan latar belakang, pastiin HaKaiTask gak ada di “Aplikasi tidur” maupun “Aplikasi tidur lelap”, terus matiin “Tidurkan aplikasi yang tak terpakai”."
+          onBuka={() => {
+            try {
+              FocusGuard.openAppDetailsSettings();
+            } catch (e) {
+              if (__DEV__) console.warn("[notif] buka info app gagal:", e);
             }
           }}
         />
