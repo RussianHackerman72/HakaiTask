@@ -1,10 +1,12 @@
 package expo.modules.focusguard
 
 import android.accessibilityservice.AccessibilityService
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
 import android.telecom.TelecomManager
 import android.view.accessibility.AccessibilityEvent
@@ -120,10 +122,34 @@ class BlockerAccessibilityService : AccessibilityService() {
       pendingAway = null
       val target = awayPkg ?: return@Runnable
       if (!GuardState.isGuarding() || !GuardState.strict) return@Runnable
+      if (!layarHidup()) return@Runnable
       halangi(target, System.currentTimeMillis())
     }
     pendingAway = r
     handler.postDelayed(r, GuardState.graceMs)
+  }
+
+  /**
+   * Layar mati atau masih kekunci = BUKAN "pergi ke app lain".
+   *
+   * Di Samsung, layar mati bikin Always-On Display naik jadi jendela depan —
+   * dan itu paket sendiri (com.samsung.android.app.aodservice), bukan
+   * SystemUI, jadi lolos dari daftar pengecualian. Hitungan tenggang jalan,
+   * 15 detik lewat, penghalangnya kepasang nunggu di balik layar kunci. Buka
+   * HP semenit kemudian, disambut interstitial buat "gangguan" yang gak
+   * pernah kejadian.
+   *
+   * Dicek pas timer-nya BUNYI, bukan cuma pas mulai: layarnya bisa mati di
+   * tengah hitungan, dan itu justru kasus yang paling sering.
+   *
+   * Ini persis janji yang ditulis di rencana P3b — layar mati, laci
+   * notifikasi, sama rotasi gak nyumbang apa-apa — cuma satu jalannya kelewat.
+   */
+  private fun layarHidup(): Boolean {
+    val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+    if (!pm.isInteractive) return false
+    val km = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+    return !km.isKeyguardLocked
   }
 
   private fun batalAway() {
