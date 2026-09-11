@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import type { Session } from "@supabase/supabase-js";
+import { DEFAULT_USER_NAME } from "@hakaitask/app";
 import { supabase } from "../lib/supabase.js";
 import { press, rise } from "../lib/motion.js";
 
@@ -30,7 +31,9 @@ function displayName(session: Session): string {
 
 export function useAuth(): AuthStatus {
   const [status, setStatus] = useState<AuthStatus>(() =>
-    supabase ? { state: "loading" } : { state: "local", userId: localUserId(), name: "Kai" },
+    supabase
+      ? { state: "loading" }
+      : { state: "local", userId: localUserId(), name: DEFAULT_USER_NAME },
   );
 
   useEffect(() => {

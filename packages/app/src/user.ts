@@ -19,5 +19,20 @@ export function localUserId(): string {
   return id;
 }
 
-/** Nama sapaan default — dipakai `openingMessage()` dan balasan chat. */
-export const DEFAULT_USER_NAME = "Kai";
+/**
+ * Sapaan default sebelum login — dipakai `openingMessage()` dan balasan chat.
+ *
+ * Ini VOKATIF, bukan nama. Dulu isinya "Kai", dan itu nama orang — nama yang
+ * bikin judul app-nya. Jadi tiap orang yang belum login disapa pakai nama
+ * pembuatnya: "Selamat malam, Kai." Kelihatan kayak app-nya salah kira, dan
+ * buat orang lain emang salah beneran.
+ *
+ * "Bos" dipilih karena dia nyapa tanpa ngaku-ngaku tau: sopan, santai, dan
+ * cocok sama laras app-nya yang pakai gue/lu. Ejaannya satu s — "Boss" itu
+ * Inggris, dan di tengah kalimat Indonesia kebaca sumbang.
+ *
+ * Begitu login, `displayName()` ngambil nama asli dari `full_name` atau
+ * bagian depan email — jadi yang ini cuma kepakai selama belum ada yang tau
+ * siapa orangnya.
+ */
+export const DEFAULT_USER_NAME = "Bos";
