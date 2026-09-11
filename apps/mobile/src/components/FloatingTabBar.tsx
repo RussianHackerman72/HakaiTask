@@ -21,7 +21,7 @@
  * `onLayout` tiap item: `onLayout` baru bunyi sesudah frame pertama, jadi
  * indikatornya kelihatan loncat dari nol pas app baru dibuka.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Keyboard, Platform, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -116,8 +116,22 @@ export function FloatingTabBar({ state, descriptors, navigation, insets }: TabBa
   const lebarTab = lebar > 0 ? (lebar - PADDING * 2) / jumlah : 0;
 
   const x = useSharedValue(0);
+  /**
+   * Lompatan PERTAMA sesudah lebarnya keukur gak dianimasiin. Itu bukan
+   * perpindahan tab — itu indikatornya baru tau di mana tempatnya. Dianimasiin
+   * malah bikin dia selalu keliatan ngesot dari tab pertama tiap layar ini
+   * dipasang ulang.
+   */
+  const udahDitaruh = useRef(false);
   useEffect(() => {
-    if (lebarTab > 0) x.value = withSpring(state.index * lebarTab, th.spring.standard);
+    if (lebarTab <= 0) return;
+    const tujuan = state.index * lebarTab;
+    if (udahDitaruh.current) {
+      x.value = withSpring(tujuan, th.spring.standard);
+    } else {
+      x.value = tujuan;
+      udahDitaruh.current = true;
+    }
   }, [state.index, lebarTab, x, th.spring.standard]);
 
   const ketik = useKeyboardUp();
@@ -134,9 +148,20 @@ export function FloatingTabBar({ state, descriptors, navigation, insets }: TabBa
     transform: [{ translateY: (1 - muncul.value) * 24 }],
   }));
 
-  // Dilepas total pas papan ketik naik: pil yang tembus pandang tapi masih
-  // nangkep sentuhan itu jebakan di atas kolom ketik.
-  if (ketik && muncul.value === 0) return null;
+  /**
+   * SENGAJA gak di-unmount pas papan ketik naik.
+   *
+   * Dulu barisnya `if (ketik && muncul.value === 0) return null`, dan itu dua
+   * masalah sekaligus. Pertama, `muncul.value` dibaca waktu render — nilai
+   * shared value gak bikin render ulang, jadi syaratnya cuma kebaca "kebetulan
+   * udah nol pas render", gak pernah pasti. Kedua, unmount-nya nge-reset `x`
+   * balik ke 0, jadi pas muncul lagi indikatornya mulai dari tab pertama lalu
+   * ngesot ke tab yang bener — dan itu kebaca persis kayak tab bar yang nunjuk
+   * layar yang salah.
+   *
+   * Alasan aslinya — pil tembus pandang yang masih nangkep sentuhan — udah
+   * dijaga `pointerEvents` di bawah. Jadi unmount-nya gak beli apa-apa.
+   */
 
   return (
     <Animated.View

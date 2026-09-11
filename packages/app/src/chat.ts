@@ -18,8 +18,19 @@ import { selectVocab } from "./select.js";
 
 const HISTORY_KEY = "hakaitask-chat";
 
-/** Riwayat chat hidup 1 jam. Kamus pribadi TIDAK ikut aturan ini (V5). */
-export const CHAT_TTL_MS = 60 * 60_000;
+/**
+ * Riwayat chat hidup 24 jam. Kamus pribadi TIDAK ikut aturan ini (V5).
+ *
+ * Dulu sejam, dan sejam kependekan buat cara app ini beneran kepakai: nyatet
+ * sesuatu pagi-pagi, lalu sore mau ngecek "tadi gue minta apa aja sih". Sejam
+ * bikin jawabannya ilang sebelum pertanyaannya muncul, dan dari sisi user itu
+ * kebaca sebagai riwayat yang kehapus sendiri.
+ *
+ * 24 jam BERGULIR, bukan "sampai tengah malam". Batas kalender bikin obrolan
+ * jam 23:55 ilang lima menit kemudian — persis tebing yang mau dihindarin.
+ * Bergulir selalu nyakup hari yang sama, plus semalam sesudahnya.
+ */
+export const CHAT_TTL_MS = 24 * 60 * 60_000;
 
 export interface StoredMessage extends ChatMessage {
   at: number;

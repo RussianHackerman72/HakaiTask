@@ -957,3 +957,49 @@ describe("sapaan pembuka (§2)", () => {
     expect(m.text).toContain("kosong");
   });
 });
+
+/**
+ * "batalkan" merangkap dua peran: verba hapus DAN jawaban "nggak". Blok ini
+ * ngejaga garis di antaranya, karena salah satu sisinya destruktif.
+ */
+describe("batalkan — verba hapus yang merangkap jawaban nggak", () => {
+  it("sendirian TETAP basa-basi, bukan perintah hapus", () => {
+    // Ini yang paling penting di blok ini. Perintah hapus tanpa sasaran bakal
+    // nyomot task mana pun yang kebetulan ada — dan "batal" sendirian itu
+    // orang bilang "nggak jadi", bukan "musnahin sesuatu".
+    for (const s of ["batalkan", "batal", "tolong batalkan", "batalin dong"]) {
+      const r = chatTurn(s, ctx({ tasks: [task("t1", "Mabar ama Kai")] }));
+      expect(r.effects).toHaveLength(0);
+      expect(r.messages[0]!.text).not.toContain("Hapus");
+    }
+  });
+
+  it("ada sasarannya → konfirmasi hapus", () => {
+    const r = chatTurn("batalkan Mabar ama Kai", ctx({ tasks: [task("t1", "Mabar ama Kai")] }));
+    expect(r.messages[0]!.text).toContain("Hapus");
+    // Masih konfirmasi, belum kehapus.
+    expect(r.effects).toHaveLength(0);
+  });
+
+  it("'batalkan selesai' tetap uncomplete, bukan hapus", () => {
+    // findLongestIn milih frasa TERPANJANG, jadi "batalkan selesai" (2 kata)
+    // menang atas "batalkan" (1 kata). Kalau urutannya kebalik, orang yang
+    // mau batalin centang malah ditawarin ngehapus task-nya.
+    const t = task("t1", "Mabar ama Kai", { status: "done" });
+    const r = chatTurn("batalkan selesai Mabar ama Kai", ctx({ tasks: [t] }));
+    expect(r.effects.map((e) => e.type)).toContain("PATCH_TASK");
+    expect(r.messages[0]!.text).not.toContain("Hapus");
+  });
+
+  it("di tengah konfirmasi, 'batal' tetap NOLAK", () => {
+    const r = chatTurn(
+      "batal",
+      ctx({
+        tasks: [task("t1", "Mabar ama Kai")],
+        pending: { kind: "confirmCreate", input: "beli kopi", at: NOW.getTime() },
+      }),
+    );
+    expect(r.messages[0]!.text).toBe("Oke, gak jadi.");
+    expect(r.effects).toHaveLength(0);
+  });
+});

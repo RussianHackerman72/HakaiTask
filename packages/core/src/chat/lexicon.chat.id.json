@@ -1,6 +1,7 @@
 {
   "_readme": "KAMUS CHAT HAKAITASK — PLAN-CHAT.md §5.2. Kamus ini MELENGKAPI lexicon.id.json, bukan gantiin. Yang di sini khusus kosakata PERINTAH (verba, status, topik, rentang) yang gak dibutuhin quick-add. Aturan sama: semua kunci huruf kecil, nambah kata = nambah satu baris di sini, bukan ngedit logika. Frasa multi-kata ditulis dengan spasi dan SELALU dicocokkan terpanjang-dulu.",
   "_readme_cakupan": "Isinya sengaja LUAS: sinonim formal, bentuk sehari-hari, singkatan, dan salah ketik yang umum. Tujuannya supaya user gak perlu ngapalin 'kata ajaib' — dia nulis apa adanya dan tetap kebaca. Ini pengganti 'model yang nebak': cakupan didapat dari daftar yang bisa dibaca dan dikoreksi, bukan dari tebakan yang gak bisa diperiksa. Kalau ada yang kelewat, itu satu baris — bukan retraining.",
+  "_catatan_batal": "batalkan/batalin/batal ada di deny SEKALIGUS verbs.delete, dan itu disengaja. Sendirian dia tetap jawaban 'nggak': di tengah konfirmasi handlePending nangkep dia duluan, dan kalau berdiri sendiri jalur NO_OP_WORDS bikin dia chitchat — dua-duanya jalan sebelum verba dicocokin. Yang berubah cuma kalau dia diikutin sasaran: 'batalkan rapat' sekarang minta konfirmasi hapus, bukan bikin task baru berjudul 'Batalkan rapat'. Frasa panjang tetap menang karena findLongestIn milih yang terpanjang, jadi 'batalkan selesai' masih uncomplete.",
   "_catatan_verba": "Sengaja TIDAK memuat 'jadwal' (di lexicon.id.json dia intent.schedule = bikin jadwal, lihat PLAN-CHAT T3) dan TIDAK memuat 'beresin' (di sana dia nounTask; sengaja dibiarkan jadi contoh nyata kamus pribadi, PLAN-VOCAB §10.1). Verba penciptaan juga gak ada di sini — jalur CREATE diserahkan ke parseQuickAdd (PLAN-CHAT §5.3).",
   "verbs": {
     "list": [
@@ -169,7 +170,10 @@
       "menghilangkan",
       "delete",
       "remove",
-      "drop"
+      "drop",
+      "batalkan",
+      "batalin",
+      "batal"
     ],
     "availability": [
       "kosong",

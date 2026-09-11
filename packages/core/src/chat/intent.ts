@@ -117,10 +117,28 @@ export interface ChatAnalysis {
 
 // ── pembacaan satuan ─────────────────────────────────────────────────────────
 
-export function readVerb(ws: readonly string[], i: number): { verb: Verb; len: number } | null {
+export function readVerb(
+  ws: readonly string[],
+  i: number,
+): { verb: Verb; len: number; phrase: string } | null {
   const hit = findLongestIn(ws, i, VERBS);
-  return hit ? { verb: hit.key as Verb, len: hit.len } : null;
+  return hit ? { verb: hit.key as Verb, len: hit.len, phrase: hit.phrase } : null;
 }
+
+/**
+ * Verba hapus yang MERANGKAP jawaban "nggak".
+ *
+ * Ketiganya ada di `verbs.delete` supaya "batalkan rapat" jadi perintah, bukan
+ * task baru berjudul "Batalkan rapat". Tapi ketiganya juga ada di `deny`, dan
+ * di situ letak bahayanya: "batal" sendirian itu orang bilang "nggak jadi" —
+ * dan perintah hapus TANPA sasaran adalah bentuk paling berbahaya yang ada,
+ * karena dia bakal nyomot task mana pun yang kebetulan lagi ada.
+ *
+ * Jadi ketiganya cuma dihitung verba kalau ada kata lain yang bisa jadi
+ * sasaran. Kalau enggak, verbanya dilepas dan kalimatnya jatuh ke jalur
+ * basa-basi — persis kayak sebelum mereka masuk daftar.
+ */
+const CANCEL_VERBS = new Set(["batalkan", "batalin", "batal"]);
 
 export function readObject(
   ws: readonly string[],
@@ -205,10 +223,18 @@ export function analyzeWords(ws: readonly string[], now: Date): ChatAnalysis {
   let verb: Verb | null = null;
   for (let i = 0; i < ws.length && verb === null; i++) {
     const hit = readVerb(ws, i);
-    if (hit) {
-      verb = hit.verb;
-      take(i, hit.len);
+    if (!hit) continue;
+
+    // Lihat CANCEL_VERBS: tanpa sasaran, "batal" itu "nggak jadi", bukan
+    // "hapus sesuatu". Sasarannya dicari di luar rentang verbanya sendiri.
+    if (CANCEL_VERBS.has(hit.phrase)) {
+      const sisa = ws.filter((_, k) => k < i || k >= i + hit.len);
+      const adaSasaran = sisa.some((w) => !NOISE.has(w) && !NO_OP_WORDS.has(w));
+      if (!adaSasaran) continue;
     }
+
+    verb = hit.verb;
+    take(i, hit.len);
   }
 
   // ③ objek eksplisit

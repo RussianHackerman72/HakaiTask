@@ -1,5 +1,5 @@
 /** Agenda terdekat: task + blok sibuk, urut waktu (§7.5). */
-import { View } from "react-native";
+import { Alert, Platform, ToastAndroid, View } from "react-native";
 import type { BusyBlock, Task } from "@hakaitask/core";
 import { clock, isOverdue, snoozeTargets, whenLabel } from "@hakaitask/app/format";
 import { completeTask, snoozeTask } from "@hakaitask/app/tasks";
@@ -14,6 +14,42 @@ import { SwipeRow } from "./SwipeRow";
 // kali, sama persis, di berkas ini dan padanannya di platform satunya.
 import type { UpcomingEntry } from "@hakaitask/app/upcoming";
 export { buildEntries, type UpcomingEntry } from "@hakaitask/app/upcoming";
+
+/**
+ * Geser kiri = tunda, dan dulu langsung jalan tanpa ditanya.
+ *
+ * Yang bikin salah paham bukan gesernya. Task-nya emang GAK kehapus — dia
+ * cuma pindah tenggat ke besok pagi. Tapi begitu pindah, dia langsung keluar
+ * dari jendela "Berikutnya" dan lenyap dari layar, tanpa sepatah kata. Dari
+ * sisi orang yang megang HP, "digeser terus ilang" itu kebaca sebagai
+ * kehapus, dan gak ada apa pun di layar yang bilang sebaliknya.
+ *
+ * Jadi ditambahin dua kalimat yang ngapit satu aksi: satu SEBELUM, nyebut jam
+ * tujuannya biar masih bisa dibatalin, dan satu SESUDAH, biar jelas dia
+ * pindah ke mana, bukan ilang ke mana.
+ *
+ * SwipeRow selalu mantul balik sendiri, jadi batal di sini gak ninggalin
+ * barisnya nyangkut setengah jalan.
+ */
+function tanyaTunda(task: Task, now: Date): void {
+  const target = snoozeTargets(now)[0]!;
+  const kapan = `${target.label.toLowerCase()}, ${clock(target.at)}`;
+
+  Alert.alert("Tunda task ini?", `"${task.title}" pindah ke ${kapan}.`, [
+    { text: "Gak jadi", style: "cancel" },
+    {
+      text: "Tunda",
+      onPress: () => {
+        snoozeTask(task, target.at);
+        const kabar = `"${task.title}" ditunda ke ${kapan}.`;
+        // Toast-nya Android nempel di layar, bukan di layar ini — jadi
+        // kabarnya tetap kebaca walau barisnya udah keluar dari daftar.
+        if (Platform.OS === "android") ToastAndroid.show(kabar, ToastAndroid.LONG);
+        else Alert.alert(kabar);
+      },
+    },
+  ]);
+}
 
 export function UpcomingList({
   entries,
@@ -38,7 +74,7 @@ export function UpcomingList({
             <SwipeRow
               key={e.task.id}
               onComplete={() => completeTask(e.task)}
-              onSnooze={() => snoozeTask(e.task, snoozeTargets(now)[0]!.at)}
+              onSnooze={() => tanyaTunda(e.task, now)}
             >
               <TaskRow
                 task={e.task}
