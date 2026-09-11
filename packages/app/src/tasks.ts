@@ -15,7 +15,7 @@ import {
 } from "@hakaitask/core";
 import { useKaiStore } from "@hakaitask/core/store";
 import { platform } from "./platform.js";
-import { selectBusyBlocks, selectTasks } from "./select.js";
+import { selectArchived, selectBusyBlocks, selectTasks } from "./select.js";
 
 /** `crypto.randomUUID` gak ada di Hermes — jadi disuntik lewat adapter. */
 export function newId(): string {
@@ -29,6 +29,11 @@ function nowIso(): string {
 export function useTasks(): Task[] {
   const map = useKaiStore((s) => s.tasks);
   return useMemo(() => selectTasks(map), [map]);
+}
+
+export function useArchivedTasks(): Task[] {
+  const map = useKaiStore((s) => s.tasks);
+  return useMemo(() => selectArchived(map), [map]);
 }
 
 export function useBusyBlocks(): BusyBlock[] {
@@ -181,6 +186,18 @@ export function snoozeTask(task: Task, until: Date): void {
 
 export function archiveTask(task: Task): void {
   useKaiStore.getState().patchTask(task.id, { status: "archived" });
+}
+
+/**
+ * Balik dari arsip ke daftar aktif.
+ *
+ * Selalu mendarat di `todo`, bukan di status sebelum diarsipin — status lama
+ * gak disimpen di mana pun, dan nebak-nebak bakal bikin task yang dulu
+ * "dikerjain" balik sebagai "dikerjain" padahal udah berbulan-bulan gak
+ * disentuh. `todo` itu tebakan yang paling gak nyakitin.
+ */
+export function unarchiveTask(task: Task): void {
+  useKaiStore.getState().patchTask(task.id, { status: "todo" });
 }
 
 export function deleteTask(task: Task): void {

@@ -11,8 +11,8 @@ import type { StateStorage } from "zustand/middleware";
 import { configureStorage, useKaiStore } from "@hakaitask/core/store";
 import { emptyOutbox } from "@hakaitask/core/sync";
 import { configurePlatform, type PlatformAdapter } from "./platform.js";
-import { createTask } from "./tasks.js";
-import { selectTasks } from "./select.js";
+import { archiveTask, createTask, unarchiveTask } from "./tasks.js";
+import { selectArchived, selectTasks } from "./select.js";
 
 const USER = "u1";
 
@@ -138,5 +138,46 @@ describe("createTask", () => {
     const t = only();
     expect(t.id).not.toBe("palsu");
     expect(t.userId).toBe(USER);
+  });
+});
+
+/**
+ * Arsip. Yang diuji di sini bukan "statusnya berubah" — itu sepele — tapi
+ * bahwa arsip punya JALAN BALIK. Sebelum ada layar arsip, `archiveTask` itu
+ * satu arah: task-nya keluar dari `selectTasks`, dari papan, dari pencarian,
+ * dan dari notifikasi sekaligus, tanpa satu pun tempat buat ngeliatnya lagi.
+ */
+describe("arsip", () => {
+  it("yang diarsipin keluar dari daftar aktif, tapi kebaca di selectArchived", () => {
+    createTask({ title: "Beresin gudang" }, USER);
+    const t = only();
+    archiveTask(t);
+
+    const map = useKaiStore.getState().tasks;
+    expect(selectTasks(map)).toHaveLength(0);
+    expect(selectArchived(map).map((x) => x.title)).toEqual(["Beresin gudang"]);
+  });
+
+  it("bisa dibalikin, dan mendarat di todo", () => {
+    createTask({ title: "Beresin gudang" }, USER);
+    archiveTask(only());
+
+    const arsip = selectArchived(useKaiStore.getState().tasks)[0]!;
+    unarchiveTask(arsip);
+
+    const map = useKaiStore.getState().tasks;
+    expect(selectArchived(map)).toHaveLength(0);
+    expect(selectTasks(map)[0]!.status).toBe("todo");
+  });
+
+  it("yang kehapus beneran TIDAK nongol di arsip", () => {
+    // Diarsipin sama dihapus itu dua maksud yang beda. Tombstone gak boleh
+    // bocor ke layar arsip cuma gara-gara dua-duanya sama-sama "gak aktif".
+    createTask({ title: "Beresin gudang" }, USER);
+    const t = only();
+    archiveTask(t);
+    useKaiStore.getState().patchTask(t.id, { deletedAt: new Date().toISOString() });
+
+    expect(selectArchived(useKaiStore.getState().tasks)).toHaveLength(0);
   });
 });

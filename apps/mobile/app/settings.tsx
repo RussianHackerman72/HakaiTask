@@ -77,6 +77,20 @@ export default function Settings() {
           <FocusSettings />
         </Section>
 
+        <Section label="Arsip">
+          {/*
+            Sebelum ada layar ini, ngarsipin itu jalan buntu: task-nya keluar
+            dari chat, papan, dan notifikasi sekaligus, dan gak ada satu pun
+            tempat buat ngeliatnya lagi. Tombolnya ada di layar detail, tapi
+            jalan baliknya gak pernah dibikin.
+          */}
+          <Row
+            label="Task yang diarsipin"
+            hint="Keluar dari papan sama notifikasi, tapi gak kehapus. Bisa dibalikin."
+            onPress={() => router.navigate("/archive")}
+          />
+        </Section>
+
         <Section label="Akun">
           <Card style={{ gap: th.space[2] }}>
             {auth.state === "signed-in" ? (

@@ -14,6 +14,25 @@ export function selectTasks(map: Record<string, Task>): Task[] {
 }
 
 /**
+ * Kebalikan `selectTasks`: yang diarsipin DOANG.
+ *
+ * Diarsipin itu bukan dihapus, tapi sebelum ada layar arsip efeknya sama aja —
+ * task-nya ilang dari chat, dari papan, dari notifikasi, dan gak ada satu pun
+ * tempat buat ngeliatnya lagi. Sekali jalan, tanpa jalan balik.
+ *
+ * Tombstone (`deletedAt`) tetap disaring di sini. Yang kehapus beneran gak
+ * punya layar, dan emang gak usah punya — itu beda maksud dari diarsipin.
+ *
+ * Urut dari yang paling baru diarsipin, karena yang paling mungkin dicari
+ * balik itu yang barusan.
+ */
+export function selectArchived(map: Record<string, Task>): Task[] {
+  return Object.values(map)
+    .filter((t) => !t.deletedAt && t.status === "archived")
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/**
  * Jadwal sekarang dihapus pakai tombstone (biar sync-nya jujur), jadi yang
  * udah dihapus harus disaring di sini — persis kayak task.
  */
