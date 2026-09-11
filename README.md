@@ -841,7 +841,7 @@ doang terus `eas update` gak ngubah apa-apa di HP, dan gagalnya diem.
 **Tiga hal yang gampang bikin salah paham:**
 
 1. `runtimeVersion` pakai `{policy: "appVersion"}`, jadi nilainya ngikut
-   `version` — sekarang `0.3.0`. Naikin `version` berarti SEMUA app yang udah
+   `version` — sekarang `0.4.0`. Naikin `version` berarti SEMUA app yang udah
    kepasang berhenti nerima update sampai orangnya pasang APK baru. Jadi
    naikin versi itu keputusan rilis, bukan kerapian.
 2. `fallbackToCacheTimeout: 0` bikin app selalu buka pakai bundel yang udah
