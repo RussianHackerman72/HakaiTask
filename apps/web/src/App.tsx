@@ -6,6 +6,7 @@ import { SignIn, useAuth } from "./components/AuthGate.js";
 import { CalendarView } from "./components/CalendarView.js";
 import { ChatView } from "./components/ChatView.js";
 import { CommandPalette, type Command } from "./components/CommandPalette.js";
+import { ArchiveView } from "./components/ArchiveView.js";
 import { KanbanView } from "./components/KanbanView.js";
 import { DetailSheet } from "./components/DetailSheet.js";
 import { EmptyState } from "./components/EmptyState.js";
@@ -19,7 +20,7 @@ import { useTheme } from "./lib/theme.js";
 import { startSync } from "@hakaitask/app/sync";
 import { supabase } from "./lib/supabase.js";
 import { watchConnectivity } from "./lib/platform.js";
-import { useBusyBlocks, useFocus, useTasks } from "@hakaitask/app/tasks";
+import { useArchivedTasks, useBusyBlocks, useFocus, useTasks } from "@hakaitask/app/tasks";
 
 /** Transisi antar halaman — sengaja objek polos biar gak merambat ke anak. */
 const PAGE_ANIM = {
@@ -64,6 +65,7 @@ function Dashboard({
 
   const hydrated = useKaiStore((s) => s.hydrated);
   const tasks = useTasks();
+  const archived = useArchivedTasks();
   const blocks = useBusyBlocks();
 
   const [page, setPage] = useState<Page>("home");
@@ -164,6 +166,11 @@ function Dashboard({
       ...(page !== "kanban"
         ? [{ id: "nav-board", label: "Buka papan", run: () => setPage("kanban") }]
         : []),
+      // Satu-satunya jalan ke arsip di web. Gak dikasih tab biar dia gak
+      // keliatan sejajar sama empat halaman utama.
+      ...(page !== "archive"
+        ? [{ id: "nav-archive", label: "Buka arsip", run: () => setPage("archive") }]
+        : []),
       { id: "theme", label: "Ganti mode terang/gelap", run: toggleTheme },
       ...(onSignOut ? [{ id: "signout", label: "Keluar", run: onSignOut }] : []),
     ],
@@ -256,10 +263,18 @@ function Dashboard({
                 onOpenTask={(task) => setOpenTaskId(task.id)}
               />
             </motion.div>
-          ) : (
+          ) : page === "kanban" ? (
             <motion.div key="kanban" {...PAGE_ANIM} className="mt-10">
               <KanbanView
                 tasks={tasks}
+                now={now}
+                onOpenTask={(task) => setOpenTaskId(task.id)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="archive" {...PAGE_ANIM} className="mt-10">
+              <ArchiveView
+                tasks={archived}
                 now={now}
                 onOpenTask={(task) => setOpenTaskId(task.id)}
               />

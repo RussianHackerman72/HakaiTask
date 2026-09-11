@@ -143,16 +143,16 @@ export default function Focus() {
             {timer.guard === "tanpa-izin" && (
               <Tappable
                 onPress={() => router.push("/focus/setup")}
-                style={{ paddingHorizontal: 16 }}
+                style={{ alignSelf: "stretch", paddingHorizontal: 24 }}
               >
-                <T variant="bodySm" tone="accent">
+                <T variant="bodySm" tone="accent" style={{ textAlign: "center" }}>
                   App-nya gak lagi ditahan — izin aksesibilitasnya mati. Betulin →
                 </T>
               </Tappable>
             )}
 
             {timer.guard === "gagal" && (
-              <T variant="bodySm" tone="accent">
+              <T variant="bodySm" tone="accent" style={{ textAlign: "center" }}>
                 Penjaga app gagal jalan. Timernya tetap normal.
               </T>
             )}

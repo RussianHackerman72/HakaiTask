@@ -223,6 +223,21 @@ class FocusGuardModule : Module() {
       context.startForegroundService(svc)
     }
 
+    /**
+     * Jeda ≠ berhenti. `stopGuard()` matiin layanannya, dan bareng itu
+     * notifikasinya ikut ilang — padahal yang lagi dijeda itu sesinya, bukan
+     * kehadirannya. Ini ngirim ACTION_PAUSE ke layanan yang lagi jalan, jadi
+     * dia tetap hidup dan cuma ganti bentuk.
+     *
+     * Jalannya sama persis kayak tombol "Jeda" di laci, biar dua-duanya
+     * ketemu di satu tempat dan gak bisa beda kelakuan.
+     */
+    Function("pauseGuard") {
+      context.startService(
+        Intent(context, FocusGuardService::class.java).setAction(FocusGuardService.ACTION_PAUSE),
+      )
+    }
+
     Function("stopGuard") {
       GuardState.stop()
       setDnd(false)

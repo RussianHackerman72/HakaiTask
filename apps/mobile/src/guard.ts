@@ -226,6 +226,22 @@ export function guardStatus(): GuardStatus {
   }
 }
 
+/**
+ * Jeda: penjaganya berhenti nahan app, tapi notifikasinya tetap nemenin.
+ *
+ * Dipisah dari `stopGuard` karena dulu jeda make jalan yang sama, dan
+ * akibatnya notifikasinya ilang tiap kali sesinya dijeda — jadi satu-satunya
+ * cara ngelanjutin ya buka app-nya, persis yang mau dihindarin sama tombol di
+ * laci itu.
+ */
+export function pauseGuard(): void {
+  try {
+    FocusGuard.pauseGuard();
+  } catch (e) {
+    if (__DEV__) console.warn("[guard] pauseGuard gagal:", e);
+  }
+}
+
 export function stopGuard(): void {
   try {
     FocusGuard.stopGuard();

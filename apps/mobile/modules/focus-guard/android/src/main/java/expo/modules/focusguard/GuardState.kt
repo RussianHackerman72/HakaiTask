@@ -119,6 +119,22 @@ object GuardState {
     guarding.set(true)
   }
 
+  /**
+   * Jeda: berhenti nahan app, TAPI setelannya disimpen.
+   *
+   * `stop()` ngosongin `blocked` sama `strict` — bener buat sesi yang kelar,
+   * fatal buat jeda, karena pas dilanjutin gak ada lagi yang bisa dipulihin.
+   * Jeda cuma nurunin bendera `guarding`; daftarnya dibiarin utuh.
+   *
+   * Hitungan percobaannya direset, biar app yang kebuka selama jeda gak
+   * kehitung gangguan pas sesinya lanjut.
+   */
+  fun pause() {
+    guarding.set(false)
+    lastBlockAt = 0L
+    lastBlockedPackage = null
+  }
+
   fun stop() {
     guarding.set(false)
     blocked = emptySet()

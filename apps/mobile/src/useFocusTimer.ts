@@ -21,7 +21,7 @@ import {
 import { useKaiStore } from "@hakaitask/core/store";
 import { newId } from "@hakaitask/app/tasks";
 import { cancelTimerDone, scheduleTimerDone } from "./notifications";
-import { guardStatus, startGuard, stopGuard, type GuardStatus } from "./guard";
+import { guardStatus, pauseGuard, startGuard, stopGuard, type GuardStatus } from "./guard";
 import { FocusGuard } from "../modules/focus-guard";
 import { endsAt as endsAtOf } from "@hakaitask/core/focus";
 
@@ -133,8 +133,9 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
     if (!f) return;
     useKaiStore.getState().setFocus(pauseFocus(f, new Date()));
     void cancelTimerDone();
-    // Dijeda = gak lagi fokus. Nahan app pas lagi jeda itu cuma nyebelin.
-    stopGuard();
+    // Dijeda = gak lagi fokus. Nahan app pas lagi jeda itu cuma nyebelin —
+    // tapi notifikasinya TETAP, biar bisa dilanjutin dari laci tanpa buka app.
+    pauseGuard();
     setGuard(null);
   }, []);
 
@@ -220,16 +221,17 @@ export function useFocusTimer(userId: string, title = "Lagi fokus"): FocusTimer 
    * temporal dead zone dan render-nya lempar ReferenceError.
    *
    * Layanannya udah matiin dirinya sendiri sebelum event ini nyampe, jadi di
-   * sini tinggal nyamain state-nya. `stopGuard()` di dalam `pause`/`finish`
+   * sini tinggal nyamain state-nya. `pauseGuard()`/`stopGuard()` di dalam `pause`/`finish`
    * jadi gak ada kerjaannya, dan itu gak apa-apa: dia idempoten.
    */
   useEffect(() => {
     const sub = FocusGuard.addListener("onGuardAction", (e) => {
       if (e.action === "pause") pause();
+      else if (e.action === "resume") resume();
       else finish(true);
     });
     return () => sub.remove();
-  }, [pause, finish]);
+  }, [pause, resume, finish]);
 
   return {
     view: focus ? focusView(focus, now) : null,

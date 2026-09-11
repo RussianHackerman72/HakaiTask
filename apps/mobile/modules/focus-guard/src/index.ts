@@ -64,7 +64,7 @@ type Events = {
    * Sesi fokus yang harus dibuka app-nya dulu buat disudahi itu ngundang
    * mampir ke app lain di jalan — persis yang lagi dicegah.
    */
-  onGuardAction: (e: { action: "pause" | "stop" }) => void;
+  onGuardAction: (e: { action: "pause" | "stop" | "resume" }) => void;
 };
 
 declare class FocusGuardModuleType extends NativeModule<Events> {
@@ -102,6 +102,11 @@ declare class FocusGuardModuleType extends NativeModule<Events> {
 
   // ── sesi ─────────────────────────────────────────────────────────────────
   startGuard(options: StartGuardOptions): void;
+  /**
+   * Jeda tanpa matiin layanannya — notifikasinya tetap ada, cuma ganti jadi
+   * "Dijeda" sama tombol "Lanjut". `stopGuard()` buat sesi yang beneran kelar.
+   */
+  pauseGuard(): void;
   stopGuard(): void;
   isGuarding(): boolean;
 }
