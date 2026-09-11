@@ -95,19 +95,29 @@ export function FocusSettings() {
         luar Play — dan tombolnya cuma kelihatan ABU-ABU, tanpa sepatah kata
         kenapa. Dari sisi user itu kebaca sebagai app-nya yang rusak.
 
-        Gak ada API buat ngecek keadaan ini, jadi yang dibaca gejalanya:
-        user pergi ke Setelan, balik, izinnya masih mati. Sekali bisa aja
-        dia cuma batal. Dua kali, hampir pasti kekunci.
+        Gak ada API buat ngecek keadaan ini. Dulu kartunya nunggu DUA kali
+        gagal dulu baru nongol — alasannya "sekali bisa aja dia cuma batal".
+        Masuk akal buat app biasa, tapi app ini gak pernah dipasang dari Play
+        dan gak akan pernah (lihat §"Play Protect" di README). Artinya
+        penguncian ini bukan kasus pinggiran yang perlu ditebak dari gejala:
+        dia keadaan BAWAAN buat tiap orang yang masang app ini.
+
+        Jadi nunggunya cuma bikin orang bolak-balik ke Setelan dua kali buat
+        nemu tembok yang sama, sebelum akhirnya dikasih tau. Sekarang dikasih
+        tau di depan; hitungan gagalnya tinggal dipakai buat ganti nada, dari
+        "bakal" jadi "ini yang lagi kejadian".
 
         Dan ini emang gak bisa diakalin dari kode — pengunciannya justru ada
         supaya app gak bisa nyalain layanan aksesibilitasnya sendiri, persis
         langkah yang dipakai malware. Yang bisa kita kasih cuma kalimat yang
         jujur plus jalan pintas ke halaman yang bener.
       */}
-      {!perms.a11y && a11yGagal >= 2 && (
+      {!perms.a11y && (
         <Card style={{ gap: 8 }}>
           <T variant="h2" style={{ fontSize: 15 }}>
-            Tombolnya abu-abu dan gak bisa dipencet?
+            {a11yGagal >= 1
+              ? "Tombolnya abu-abu dan gak bisa dipencet?"
+              : "Tombolnya bakal abu-abu — ini jalan keluarnya"}
           </T>
           <T variant="bodySm" tone="ink70">
             Itu bukan app-nya rusak. Android ngunci tombol ini buat app yang
@@ -247,11 +257,20 @@ function Perm({
         </T>
       </View>
       <T variant="bodySm" tone="ink70">{why}</T>
-      {!granted && (
-        <Tappable onPress={onPress} style={{ alignSelf: "flex-start", paddingHorizontal: 0 }}>
-          <T variant="num" style={{ color: th.c.ink }}>Buka setelan →</T>
-        </Tappable>
-      )}
+      {/*
+        Jalan ke Setelan tetap kebuka sesudah izinnya dikasih.
+
+        Dulu tautannya ilang begitu `granted` — jadi barisnya cuma bisa dibaca,
+        gak bisa dipakai. Padahal izin itu dua arah: yang udah nyalain juga
+        berhak matiin, dan satu-satunya tempat matiinnya ya Setelan sistem yang
+        sama. Nyembunyiin jalan ke sana bikin kartunya kebaca rusak, bukan
+        kebaca beres.
+      */}
+      <Tappable onPress={onPress} style={{ alignSelf: "flex-start", paddingHorizontal: 0 }}>
+        <T variant="num" style={{ color: th.c.ink }}>
+          {granted ? "Ubah di Setelan →" : "Buka setelan →"}
+        </T>
+      </Tappable>
     </Card>
   );
 }

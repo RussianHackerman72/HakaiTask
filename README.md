@@ -60,6 +60,7 @@ begini yang diam-diam bikin task berjudul "Makasih".
 | [Kamus pribadi](#kamus-pribadi) | Ngajarin istilah kamu sendiri |
 | [Mulai pakai](#mulai-pakai) | Jalanin di komputer sendiri |
 | [Cara kerjanya](#cara-kerjanya) | Arsitektur & alur data |
+| [Play Protect](#play-protect-kenapa-app-nya-ketahan-pas-dipasang) | Kenapa pemasangannya ketahan, dan kenapa gak diakalin |
 | [Catatan lapangan](#catatan-lapangan) | Bug nyata & aturan yang lahir darinya |
 | [Status](#status-apa-yang-udah-jadi) | Yang udah jadi vs belum |
 
@@ -724,6 +725,83 @@ DOM. Itu yang bikin logikanya bisa dipakai ulang di mobile nanti tanpa ditulis u
 
 Ketiganya menyimpan **alasan** di balik keputusan, termasuk yang **dibatalkan**
 dan kenapa — bagian yang biasanya hilang begitu kode ditulis.
+
+---
+
+## Play Protect: kenapa app-nya ketahan pas dipasang
+
+Pas APK-nya dipasang, Google Play Protect nahan dengan kalimat ini:
+
+> **App blocked to protect your device**
+> This app can request access to sensitive data. This can increase the risk of
+> identity theft or financial fraud.
+
+Lalu: **App not installed.**
+
+Ini bukan bug, bukan salah setelan, dan **bukan sesuatu yang bisa dibenerin
+dari kode.** Ditulis di sini biar berhenti kebaca sebagai pekerjaan yang belum
+kelar.
+
+### Kenapa
+
+Yang dicurigai bukan izin di `app.json`. Yang dicurigai **layanan
+aksesibilitas** — `BIND_ACCESSIBILITY_SERVICE` di `modules/focus-guard`. Kalimat
+"can request access to sensitive data" itu kalimat baku Google buat app yang
+mendaftarkan layanan aksesibilitas.
+
+Dan curiganya wajar. App yang dipasang di luar Play, yang minta aksesibilitas,
+adalah persis bentuk malware pencuri data: aksesibilitas bisa baca isi layar
+dan mengetuk tombol atas nama orangnya. Play Protect ada buat nahan pola itu.
+Kita kebetulan pola yang sama, dengan niat yang beda — tapi niat gak bisa
+dibaca dari APK.
+
+Penjaga fokus **gak bisa jalan tanpa layanan itu**. Alternatifnya cuma polling
+`UsageStats` tiap detik: lebih boros baterai, dan telat beberapa detik — beberapa
+detik yang persis bikin orang lupa lagi ngapain. Jadi ini bukan izin yang bisa
+dilepas; dia fiturnya.
+
+### Yang udah dicoba, dan kenapa gak nolong
+
+Dua izin pernah dibuang gara-gara Play Protect, dan dua-duanya emang pantes
+dibuang:
+
+| Izin | Nasib | Efeknya ke blokir ini |
+|---|---|---|
+| `QUERY_ALL_PACKAGES` | dibuang di `704e4ac` | benerin blokir yang **lain** |
+| `PACKAGE_USAGE_STATS` | dibuang bareng penjaga fokus | gak kepakai sama sekali, jadi gratis |
+
+Sesudah dua-duanya lepas, blokirnya **tetap muncul**. Itu yang nutup
+pertanyaannya: sisa pemicunya layanan aksesibilitas, dan itu gak akan pernah
+lepas.
+
+Diuji di perangkat beneran (Galaxy S23+, 10 September 2026), bukan di emulator.
+
+### Kenapa gak diakalin
+
+Pernah ditanya, dan jawabannya **gak, dan emang gak boleh**. Setiap cara
+"ngakalin" deteksi ini ya persis teknik yang dipakai malware buat lolos dari
+deteksi yang sama. Aturan yang sama kayak Restricted settings: penguncian ini
+ada supaya app gak bisa nyalain layanan aksesibilitasnya sendiri — dan itu
+memang jangan sampai bisa.
+
+Satu-satunya jalan yang beneran ngilangin ini adalah **masang dari Play**,
+termasuk lewat internal testing track. Itu pernah dipertimbangkan dan ditolak
+buat proyek ini. Jadi sideload adalah plafonnya, dan plafon itu disebut di
+sini, bukan didiemin.
+
+### Masangnya gimana
+
+Play Protect harus dimatiin sementara: **Play Store → foto profil → Play
+Protect → ⚙ → matikan "Scan apps with Play Protect"**, pasang APK-nya, lalu
+**nyalain lagi**.
+
+Nyalain lagi itu bukan basa-basi. Play Protect ngejagain seluruh HP, bukan cuma
+pemasangan ini — app yang udah kepasang tetap jalan normal walau pemindainya
+aktif lagi.
+
+Efek sampingnya satu lagi, dan ini normal: Android 13+ juga bakal ngunci
+sakelar aksesibilitasnya (Restricted settings). Layar Setelan di dalam app
+nerangin itu sendiri, lengkap sama jalan pintas ke halaman info app.
 
 ---
 

@@ -179,7 +179,11 @@ export default function Chat() {
               `useThemePref`, cuma gak pernah ada yang bisa milih.
             */}
             <Tappable
-              onPress={() => router.push("/settings")}
+              // `navigate`, bukan `push`: `push` numpuk layar baru tiap
+              // ketukan, dan layar Setelan butuh sepersekian detik buat
+              // muncul — jadi ketukan kedua kerasa wajar, dan yang didapat dua
+              // Setelan bertumpuk. `navigate` mungut layar yang udah ada.
+              onPress={() => router.navigate("/settings")}
               accessibilityLabel="Setelan"
               style={{
                 backgroundColor: th.c.surface,
